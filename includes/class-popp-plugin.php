@@ -17,9 +17,25 @@ class POPP_Plugin {
 	private function __construct() {
 		POPP_Database::maybe_upgrade();
 		add_action( 'rest_api_init', array( new POPP_REST_Controller(), 'register_routes' ) );
+		add_action( 'rest_api_init', array( new POPP_Playbook_REST_Controller(), 'register_routes' ) );
 		add_filter( 'rest_post_dispatch', array( $this, 'protect_private_rest_responses' ), 10, 3 );
 		add_action( 'wp', array( $this, 'protect_shortcode_pages' ) );
 		add_shortcode( 'pop_sales_action_plan', array( $this, 'render_shortcode' ) );
+		add_shortcode( 'pop_sales_playbook_builder', array( $this, 'render_playbook_shortcode' ) );
+	}
+
+	public function render_playbook_shortcode(): string {
+		if ( ! is_user_logged_in() ) {
+			return '<div class="popp-login-required">' . esc_html__( 'Please log in to access your sales playbooks.', 'pop-progress-tracker' ) . '</div>';
+		}
+		if ( ! defined( 'DONOTCACHEPAGE' ) ) define( 'DONOTCACHEPAGE', true );
+		nocache_headers();
+		$script = POPP_DIR . 'assets/js/popp-playbook.js';
+		$style  = POPP_DIR . 'assets/css/popp-playbook.css';
+		wp_enqueue_style( 'popp-playbook', POPP_URL . 'assets/css/popp-playbook.css', array(), file_exists( $style ) ? (string) filemtime( $style ) : POPP_VERSION );
+		wp_enqueue_script( 'popp-playbook', POPP_URL . 'assets/js/popp-playbook.js', array( 'wp-element' ), file_exists( $script ) ? (string) filemtime( $script ) : POPP_VERSION, true );
+		wp_add_inline_script( 'popp-playbook', 'window.POPP_PLAYBOOK=' . wp_json_encode( array( 'root' => esc_url_raw( rest_url( 'popp/v2/' ) ), 'nonce' => wp_create_nonce( 'wp_rest' ) ) ) . ';', 'before' );
+		return '<div class="popp-playbook" data-popp-playbook aria-live="polite"><p>' . esc_html__( 'Loading your sales playbooks…', 'pop-progress-tracker' ) . '</p></div>';
 	}
 
 	public function render_shortcode(): string {
@@ -60,7 +76,7 @@ class POPP_Plugin {
 		}
 
 		$post = get_queried_object();
-		if ( ! $post instanceof WP_Post || ! has_shortcode( (string) $post->post_content, 'pop_sales_action_plan' ) ) {
+		if ( ! $post instanceof WP_Post || ( ! has_shortcode( (string) $post->post_content, 'pop_sales_action_plan' ) && ! has_shortcode( (string) $post->post_content, 'pop_sales_playbook_builder' ) ) ) {
 			return;
 		}
 

@@ -14,6 +14,7 @@ if ( ! defined( 'POPP_REMOVE_DATA' ) || true !== POPP_REMOVE_DATA ) {
 
 global $wpdb;
 $tables = array(
+	$wpdb->prefix . 'popp_sales_playbooks',
 	$wpdb->prefix . 'popp_action_plans',
 );
 foreach ( $tables as $table ) {

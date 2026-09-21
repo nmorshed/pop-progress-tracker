@@ -3,7 +3,7 @@ Contributors: pop
 Tags: goals, progress, action plan, accountability, shortcode
 Requires at least: 6.2
 Requires PHP: 7.4
-Stable tag: 2.0.0
+Stable tag: 3.0.0
 License: GPLv2 or later
 
 A private 12-week sales action plan for logged-in users.
@@ -13,6 +13,8 @@ A private 12-week sales action plan for logged-in users.
 1. Activate POP Sales Action Plan.
 2. Add `[pop_sales_action_plan]` to any WordPress page.
 3. View the page while logged in.
+
+To add the React Sales Playbook Builder, place `[pop_sales_playbook_builder]` on a page. Logged-in users can create multiple independent playbooks, complete the nine-step builder, and print or save the finished playbook as a PDF.
 
 
 == Caching ==
