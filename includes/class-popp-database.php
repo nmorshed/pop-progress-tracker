@@ -11,7 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * lets the REST API reject writes originating from an older browser tab.
  */
 class POPP_Database {
-	public const VERSION = '3.0.0';
+	public const VERSION = '4.0.0';
 
 	public static function table(): string {
 		global $wpdb;
@@ -21,6 +21,11 @@ class POPP_Database {
 	public static function playbook_table(): string {
 		global $wpdb;
 		return $wpdb->prefix . 'popp_sales_playbooks';
+	}
+
+	public static function ttw_dashboard_table(): string {
+		global $wpdb;
+		return $wpdb->prefix . 'popp_ttw_dashboards';
 	}
 
 	public static function activate(): void {
@@ -59,9 +64,23 @@ class POPP_Database {
 			PRIMARY KEY  (id),
 			KEY user_status_updated (user_id,status,updated_at)
 		) $charset_collate;";
+		$ttw_dashboards  = self::ttw_dashboard_table();
+		$ttw_sql         = "CREATE TABLE {$ttw_dashboards} (
+			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+			user_id bigint(20) unsigned NOT NULL,
+			ttw_data longtext NOT NULL,
+			scorecard_data longtext NOT NULL,
+			ttw_revision bigint(20) unsigned NOT NULL DEFAULT 1,
+			scorecard_revision bigint(20) unsigned NOT NULL DEFAULT 1,
+			created_at datetime NOT NULL,
+			updated_at datetime NOT NULL,
+			PRIMARY KEY  (id),
+			UNIQUE KEY user_id (user_id)
+		) $charset_collate;";
 
 		dbDelta( $sql );
 		dbDelta( $playbook_sql );
+		dbDelta( $ttw_sql );
 		update_option( 'popp_db_version', self::VERSION, false );
 	}
 

@@ -1,12 +1,12 @@
-=== POP Sales Action Plan ===
+=== POP Sales Tools ===
 Contributors: pop
 Tags: goals, progress, action plan, accountability, shortcode
 Requires at least: 6.2
 Requires PHP: 7.4
-Stable tag: 3.0.0
+Stable tag: 4.0.0
 License: GPLv2 or later
 
-A private 12-week sales action plan for logged-in users.
+Private sales planning, playbook, and trailing twelve week dashboard tools for logged-in users.
 
 == Installation ==
 
@@ -15,6 +15,18 @@ A private 12-week sales action plan for logged-in users.
 3. View the page while logged in.
 
 To add the React Sales Playbook Builder, place `[pop_sales_playbook_builder]` on a page. Logged-in users can create multiple independent playbooks, complete the nine-step builder, and print or save the finished playbook as a PDF.
+
+To add the React Trailing Twelve Week Dashboard, place `[pop_ttw_dashboard]` on a page. It includes an independently saved Trailing Twelve Week Dashboard and Team Execution Scorecard with automatic scoring, CSV export, and print layouts.
+
+== TTW dashboard access ==
+
+Administrators can always access the TTW dashboard. Other logged-in users must be included in the `popp_ttw_dashboard_allowed_user_ids` filter. The default allowlist is empty.
+
+Example:
+
+`add_filter( 'popp_ttw_dashboard_allowed_user_ids', static function () { return array( 12, 34, 56 ); } );`
+
+The same permission check protects the shortcode and every TTW dashboard REST endpoint.
 
 
 == Caching ==
@@ -28,6 +40,8 @@ Administrators can view every user’s active or completed action plan in read-o
 == Scoring ==
 
 Every weekly activity plus commitment completion and the next commitment have equal weight. The final percentage is rounded up to the next integer and capped at 100.
+
+On the TTW dashboard, each week's Execution Score is the percentage of reported metrics that met or exceeded their goal. On the Team Execution Scorecard, the three tactics, kept commitment, and new commitment are worth 20% each; the team score averages named reps who have started reporting.
 
 == Data removal ==
 
