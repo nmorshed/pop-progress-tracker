@@ -20,7 +20,7 @@ To add the React Trailing Twelve Week Dashboard, place `[pop_ttw_dashboard]` on 
 
 == TTW dashboard access ==
 
-Administrators can always access the TTW dashboard. Other logged-in users must be included in the `popp_ttw_dashboard_allowed_user_ids` filter. The default allowlist is empty.
+Administrators can always access the TTW dashboard. When the `popp_ttw_dashboard_allowed_user_ids` filter returns an empty array (the default), every logged-in user can access it. Return one or more user IDs from the filter to restrict access to those users.
 
 Example:
 

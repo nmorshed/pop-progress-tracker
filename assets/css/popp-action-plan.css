@@ -80,7 +80,7 @@
 .popp-stat span { color: var(--popp-muted); font-size: .8rem; margin-bottom: 4px; }
 .popp-stat strong { color: var(--popp-blue); font-size: 1.3rem; }
 .popp-section-header { align-items: flex-start; display: flex; gap: 18px; justify-content: space-between; margin-bottom: 20px; }
-.popp-section-header h2 { font-size: 1.6rem; font-weight: 600; }
+.popp-section-header h2 { font-size: 2rem; font-weight: 600; }
 .popp-section-header p { margin-bottom: 0; max-width: 640px; }
 .popp-score-to-date { background: #e8f4fc; border-radius: 9px; color: var(--popp-blue); min-width: 118px; padding: 9px 13px; text-align: right; }
 .popp-score-to-date span, .popp-score-to-date strong { display: block; }

@@ -77,6 +77,10 @@ class POPP_TTW_Dashboard_REST_Controller {
 			)
 		);
 
+		if ( empty( $allowed_ids ) ) {
+			return true;
+		}
+
 		return in_array( $user_id, $allowed_ids, true );
 	}
 
