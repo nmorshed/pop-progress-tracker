@@ -26,6 +26,11 @@ class POPP_Plugin {
 		add_shortcode( 'pop_ttw_dashboard', array( $this, 'render_ttw_dashboard_shortcode' ) );
 	}
 
+	private function enqueue_brand_styles(): void {
+		$path = POPP_DIR . 'assets/css/popp-brand.css';
+		wp_enqueue_style( 'popp-brand', POPP_URL . 'assets/css/popp-brand.css', array(), file_exists( $path ) ? (string) filemtime( $path ) : POPP_VERSION );
+	}
+
 	public function render_ttw_dashboard_shortcode(): string {
 		if ( ! is_user_logged_in() ) {
 			$redirect = get_permalink() ?: home_url( '/' );
@@ -46,7 +51,8 @@ class POPP_Plugin {
 		$script_ver  = file_exists( $script_path ) ? (string) filemtime( $script_path ) : POPP_VERSION;
 		$style_ver   = file_exists( $style_path ) ? (string) filemtime( $style_path ) : POPP_VERSION;
 
-		wp_enqueue_style( 'popp-ttw-dashboard', POPP_URL . 'assets/css/popp-ttw-dashboard.css', array(), $style_ver );
+		$this->enqueue_brand_styles();
+		wp_enqueue_style( 'popp-ttw-dashboard', POPP_URL . 'assets/css/popp-ttw-dashboard.css', array( 'popp-brand' ), $style_ver );
 		wp_enqueue_script( 'popp-ttw-dashboard', POPP_URL . 'assets/js/popp-ttw-dashboard.js', array( 'wp-element' ), $script_ver, true );
 		wp_add_inline_script(
 			'popp-ttw-dashboard',
@@ -70,7 +76,8 @@ class POPP_Plugin {
 		nocache_headers();
 		$script = POPP_DIR . 'assets/js/popp-playbook.js';
 		$style  = POPP_DIR . 'assets/css/popp-playbook.css';
-		wp_enqueue_style( 'popp-playbook', POPP_URL . 'assets/css/popp-playbook.css', array(), file_exists( $style ) ? (string) filemtime( $style ) : POPP_VERSION );
+		$this->enqueue_brand_styles();
+		wp_enqueue_style( 'popp-playbook', POPP_URL . 'assets/css/popp-playbook.css', array( 'popp-brand' ), file_exists( $style ) ? (string) filemtime( $style ) : POPP_VERSION );
 		wp_enqueue_script( 'popp-playbook', POPP_URL . 'assets/js/popp-playbook.js', array( 'wp-element' ), file_exists( $script ) ? (string) filemtime( $script ) : POPP_VERSION, true );
 		wp_add_inline_script( 'popp-playbook', 'window.POPP_PLAYBOOK=' . wp_json_encode( array( 'root' => esc_url_raw( rest_url( 'popp/v2/' ) ), 'nonce' => wp_create_nonce( 'wp_rest' ) ) ) . ';', 'before' );
 		return '<div class="popp-playbook" data-popp-playbook aria-live="polite"><p>' . esc_html__( 'Loading your sales playbooks…', 'pop-progress-tracker' ) . '</p></div>';
@@ -91,7 +98,8 @@ class POPP_Plugin {
 		$script_ver  = file_exists( $script_path ) ? (string) filemtime( $script_path ) : POPP_VERSION;
 		$style_ver   = file_exists( $style_path ) ? (string) filemtime( $style_path ) : POPP_VERSION;
 
-		wp_enqueue_style( 'popp-action-plan', POPP_URL . 'assets/css/popp-action-plan.css', array(), $style_ver );
+		$this->enqueue_brand_styles();
+		wp_enqueue_style( 'popp-action-plan', POPP_URL . 'assets/css/popp-action-plan.css', array( 'popp-brand' ), $style_ver );
 		wp_enqueue_script( 'popp-action-plan', POPP_URL . 'assets/js/popp-action-plan.js', array( 'wp-element' ), $script_ver, true );
 		wp_add_inline_script(
 			'popp-action-plan',

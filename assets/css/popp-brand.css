@@ -1,0 +1,75 @@
+/* Shared POP palette and type scale. Scoped to the three shortcode roots. */
+@font-face {
+  font-family: 'POP Manrope';
+  src: url('../fonts/manrope-variable.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 200 800;
+  font-display: swap;
+}
+
+:is(.popp-action-plan, .popp-playbook, .popp-ttw-dashboard) {
+  --pop-navy: #0d2440;
+  --pop-orange: #ff6e00;
+  --pop-orange-hover: #f47a20;
+  --pop-orange-ink: #a34400;
+  --pop-sky: #38b6ff;
+  --pop-link: #086b9f;
+  --pop-background: #eff8ff;
+  --pop-selected: #e1f3ff;
+  --pop-warm: #fff3e8;
+  --pop-muted: #526477;
+  --pop-line: #dce7ef;
+  --pop-input-line: #8fa6b8;
+  --pop-field-line: #dce5ea;
+  --pop-field-focus: #9bc7e1;
+  --pop-font: 'POP Manrope', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-family: var(--pop-font);
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.6;
+  color: var(--pop-navy);
+}
+
+:is(.popp-action-plan, .popp-playbook, .popp-ttw-dashboard) :is(h1, h2, h3, h4, h5, button, input, select, textarea) {
+  font-family: var(--pop-font);
+}
+:is(.popp-action-plan, .popp-playbook, .popp-ttw-dashboard) :is(h1, h2, h3, h4, h5) {
+  color: var(--pop-navy);
+  line-height: 1.3;
+  font-weight: 700;
+}
+:is(.popp-action-plan, .popp-playbook, .popp-ttw-dashboard) :is(button, input, select, textarea):focus-visible {
+  outline: 2px solid var(--pop-link);
+  outline-offset: 3px;
+}
+:is(.popp-action-plan, .popp-playbook, .popp-ttw-dashboard) :is(input, select, textarea) {
+  font-weight: 400;
+  /* Keep WordPress theme shadows off fields, including hover and focus. */
+  box-shadow: none !important;
+}
+:is(.popp-action-plan, .popp-playbook, .popp-ttw-dashboard) :is(input, select, textarea):focus-visible {
+  outline: 2px solid var(--pop-link) !important;
+  outline-offset: 2px;
+}
+
+@media screen {
+  :is(.popp-action-plan, .popp-playbook, .popp-ttw-dashboard) h1 {
+    font-size: clamp(28px, 3vw, 32px);
+    line-height: 1.2;
+    letter-spacing: -.035em;
+  }
+  :is(.popp-action-plan, .popp-playbook, .popp-ttw-dashboard) h2 { font-size: 22px; letter-spacing: -.02em; }
+  :is(.popp-action-plan, .popp-playbook, .popp-ttw-dashboard) h3 { font-size: 18px; font-weight: 600; }
+  :is(.popp-action-plan, .popp-playbook, .popp-ttw-dashboard) :is(h4, h5) { font-size: 16px; font-weight: 600; }
+  :is(.popp-action-plan, .popp-playbook, .popp-ttw-dashboard) :is(input, select, textarea) { font-size: 16px; }
+  :is(.popp-action-plan, .popp-playbook, .popp-ttw-dashboard) :is(.popp-button, .popb-button, .popttw-button) {
+    font-size: 14px;
+    font-weight: 600;
+    min-height: 44px;
+    padding: 10px 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :is(.popp-action-plan, .popp-playbook, .popp-ttw-dashboard) * { transition: none !important; }
+}
