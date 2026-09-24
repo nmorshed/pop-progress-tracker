@@ -196,7 +196,7 @@
 /* Approved POP brand treatment. */
 .popp-ttw-dashboard .popttw-tabs { flex-wrap: wrap; }
 .popp-ttw-dashboard .popttw-tabs button { font-size: 14px; font-weight: 600; }
-.popp-ttw-dashboard .popttw-tabs button.is-active { background: var(--pop-navy); border-color: var(--pop-navy); color: #fff; box-shadow: inset 0 -3px var(--pop-sky); }
+.popp-ttw-dashboard .popttw-tabs button.is-active { background: var(--pop-navy); border-color: var(--pop-navy); color: #fff; box-shadow: none; }
 .popp-ttw-dashboard .popttw-hero { border-top: 4px solid var(--pop-sky); border-radius: 14px; }
 .popp-ttw-dashboard .popttw-hero h1 { color: #fff; }
 .popp-ttw-dashboard .popttw-hero p { color: #c2d7ea; }

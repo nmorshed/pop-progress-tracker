@@ -221,17 +221,17 @@
 }
 
 /* Approved POP brand treatment. */
-.popp-action-plan .popp-brand span { color: var(--pop-navy); font-weight: 700; }
+.popp-action-plan .popp-brand span { color: #fff; font-weight: 700; }
 .popp-action-plan .popp-sidebar nav button.is-active,
-.popp-action-plan .popp-tracker-nav > button.is-selected { background: var(--pop-selected); box-shadow: inset 3px 0 var(--pop-sky); color: var(--pop-navy); font-weight: 600; }
+.popp-action-plan .popp-tracker-nav > button.is-selected { background: var(--pop-selected); box-shadow: none; color: var(--pop-navy); font-weight: 600; }
 .popp-action-plan .popp-sidebar nav button { font-size: 14px; }
 .popp-action-plan .popp-main { padding: clamp(24px, 3vw, 36px); }
 .popp-action-plan .popp-card,
 .popp-action-plan .popp-stat,
 .popp-action-plan .popp-score-banner { border-radius: 14px; }
 .popp-action-plan .popp-button--quiet { color: var(--pop-navy); border-color: var(--pop-input-line); }
-.popp-action-plan .popp-heading > span,
-.popp-action-plan .popp-section-header > div > span { color: var(--pop-muted); letter-spacing: .08em; }
+.popp-action-plan .popp-heading > span { color: var(--pop-muted); letter-spacing: .08em; }
+.popp-action-plan .popp-section-header > div > span { color: var(--popp-muted); letter-spacing: .08em; }
 .popp-action-plan .popp-choice--yes input:checked + span { background: #236045; border-color: #236045; }
 .popp-action-plan .popp-choice--no input:checked + span { background: #ae3030; border-color: #ae3030; }
 .popp-action-plan .popp-result-status--hit { color: #236045; }
