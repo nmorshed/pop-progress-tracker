@@ -63,7 +63,7 @@
 .popp-action-plan input:focus, .popp-action-plan textarea:focus { border-color: var(--pop-field-focus); box-shadow: none; }
 .popp-action-plan input:disabled, .popp-action-plan textarea:disabled { background: #f5f7f8; color: #62717c; cursor: not-allowed; }
 .popp-date-warning { color: #a54118; font-size: 13px; font-weight: 600; }
-.popp-button { background: var(--popp-orange); border: 1px solid var(--popp-orange); border-radius: 8px; color: var(--pop-navy); cursor: pointer; font: inherit; font-weight: 600; min-height: 42px; padding: 8px 15px; }
+.popp-button { background: var(--popp-orange); border: 1px solid var(--popp-orange); border-radius: 8px; color: #fff; cursor: pointer; font: inherit; font-weight: 600; min-height: 42px; padding: 8px 15px; }
 .popp-button:hover:not(:disabled) { background: var(--pop-orange-hover); border-color: var(--pop-orange-hover); }
 .popp-button:disabled { cursor: not-allowed; opacity: .55; }
 .popp-button--quiet { background: #fff; border-color: #adc9da; color: var(--popp-blue); }
