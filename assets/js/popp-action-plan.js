@@ -133,7 +133,7 @@
     var plan = props.plan;
     var ownerName = plan && plan.owner ? plan.owner.name : 'Your action plan';
     return e('div', { className: 'popp-workspace' },
-      props.view === 'overview' ? e('header', { className: 'popp-heading' }, e('span', null, plan && plan.readOnly ? 'Student progress — read only' : '12-week execution system'), !plan ? e('h1', null, 'Your action plan') : null, plan && plan.readOnly ? e('p', { className: 'popp-read-only' }, 'Viewing ' + ownerName + '’s action plan. Changes are disabled.') : null) : null,
+      props.view === 'overview' ? e('header', { className: 'popp-heading' }, e('span', null, plan && plan.readOnly ? 'Student progress — read only' : '12-Week Execution Score'), !plan ? e('h1', null, 'Your action plan') : null, plan && plan.readOnly ? e('p', { className: 'popp-read-only' }, 'Viewing ' + ownerName + '’s action plan. Changes are disabled.') : null) : null,
       props.view === 'overview' ? e(Overview, props) : !plan ? e(EmptyState, { createPlan: props.createPlan }) :
         props.view === 'plan' ? e(PlanSetup, props) : props.view === 'rocks' ? e(Rocks, props) : props.view === 'current' ? e(CurrentWeek, props) : props.view === 'history' ? e(History, { plan: plan }) : e(Instructions)
     );
@@ -188,7 +188,7 @@
       e('section', { className: 'popp-card' }, e('div', { className: 'popp-form-grid' },
         e('label', null, 'Action plan name', e('input', { disabled: !edit.editable, value: plan.title, onChange: function (event) { edit.change(function (next) { next.title = event.target.value; }); } })),
         e('label', null, 'Week 1 ending (Friday)', e('input', { disabled: !edit.editable || configurationLocked, type: 'date', value: data.weekOneEnding, onChange: function (event) { var value = event.target.value; setDateWarning(value && !isFriday(value) ? 'Week 1 must end on a Friday. Please choose a Friday before saving.' : ''); edit.change(function (next) { next.data.weekOneEnding = value; }); } }), dateWarning ? e('span', { className: 'popp-date-warning', role: 'alert' }, dateWarning) : null)
-      ), e('h3', null, 'Weekly lead activities'), data.activities.map(function (activity, index) { return e('div', { className: 'popp-activity-row', key: index },
+      ), e('h3', { className: 'popp-plan-subheading' }, 'Weekly lead activities'), e('p', { className: 'popp-plan-description' }, 'Fully custom per Progress Tracker — no fixed catalog. Jim\'s methodology calls for 3–5 recurring activities, so at least 3 are required here — add more if this run needs them.'), data.activities.map(function (activity, index) { return e('div', { className: 'popp-activity-row', key: index },
         e('label', null, 'Activity ' + (index + 1), e('input', { disabled: !edit.editable, value: activity.name, onChange: function (event) { edit.change(function (next) { next.data.activities[index].name = event.target.value; }); } })),
         e('label', null, 'Minimum / week', e('input', { disabled: !edit.editable || configurationLocked, type: 'number', min: '0', step: 'any', value: activity.minimum, onChange: function (event) { edit.change(function (next) { next.data.activities[index].minimum = event.target.value; }); } })),
         edit.editable && data.activities.length > 3 ? e(Button, { variant: 'quiet', disabled: configurationLocked, onClick: function () { edit.change(function (next) { next.data.activities.splice(index, 1); next.data.weeks.forEach(function (week) { week.actuals.splice(index, 1); }); }); } }, 'Remove') : null
@@ -213,20 +213,80 @@
     if (week.nextCommitment.trim() !== '') hits++;
     return { score: Math.ceil(hits / (data.activities.length + 2) * 100) };
   }
+  function scoreTone(score) { return score >= 80 ? 'high' : score >= 60 ? 'mid' : 'low'; }
+  function submittedScoreToDate(data) {
+    var submitted = data.weeks.filter(function (week) { return week.status === 'submitted'; });
+    return submitted.length ? Math.ceil(submitted.reduce(function (total, week) { return total + week.score; }, 0) / submitted.length) : null;
+  }
 
   function CurrentWeek(props) {
     var edit = usePlanEditor(props), plan = props.plan, data = plan.data, index = currentWeek(data);
     if (index === null) return e('section', null, e(SectionHeader, { title: 'Current week', copy: 'This action plan is complete.', edit: edit }), e('section', { className: 'popp-card' }, e('h2', null, 'All 12 weeks submitted'), e('p', null, 'Review the Score history for your final execution results.')));
-    var week = data.weeks[index], preview = weeklyPreview(data, week);
+    var week = data.weeks[index], preview = weeklyPreview(data, week), scoreToDate = submittedScoreToDate(data);
+    var priorCommitment = index > 0 ? data.weeks[index - 1].nextCommitment.trim() : '';
     return e('section', null, e(SectionHeader, { title: 'Current week', copy: 'Week ' + (index + 1) + ' ends ' + weekDate(data.weekOneEnding, index) + '.', edit: edit }),
-      e('section', { className: 'popp-card' }, e('div', { className: 'popp-week-score' }, e('span', null, 'Weekly Score'), e('strong', null, preview.score + '%')),
-      e('fieldset', null, e('legend', null, 'Did you complete your prior commitment?'),
-        e('label', { className: 'popp-choice' }, e('input', { disabled: !edit.editable, type: 'radio', name: 'commitment', checked: week.commitmentCompleted === true, onChange: function () { edit.change(function (next) { next.data.weeks[index].commitmentCompleted = true; }); } }), 'Yes'),
-        e('label', { className: 'popp-choice' }, e('input', { disabled: !edit.editable, type: 'radio', name: 'commitment', checked: week.commitmentCompleted === false, onChange: function () { edit.change(function (next) { next.data.weeks[index].commitmentCompleted = false; }); } }), 'No')
-      ), e('div', { className: 'popp-results' }, data.activities.map(function (activity, activityIndex) { var actual = week.actuals[activityIndex]; var hasActual = hasNumber(actual); var hasGoal = activity.minimum !== ''; var hit = hasActual && hasGoal && Number(actual) >= Number(activity.minimum); return e('div', { className: 'popp-result-row', key: activityIndex }, e('span', { className: 'popp-result-name' }, activity.name || 'Activity ' + (activityIndex + 1)), e('span', { className: 'popp-result-minimum' }, 'Minimum: ' + (hasGoal ? activity.minimum : 'not set')), e('label', { className: 'popp-result-input' }, e('span', { className: 'screen-reader-text' }, 'Actual result for ' + (activity.name || 'Activity ' + (activityIndex + 1))), e('input', { disabled: !edit.editable, type: 'number', min: '0', step: 'any', value: actual === undefined ? '' : actual, placeholder: 'Actual', onChange: function (event) { edit.change(function (next) { next.data.weeks[index].actuals[activityIndex] = event.target.value; }); } })), e('span', { className: 'popp-goal-check', 'aria-label': hit ? 'Goal met' : undefined }, hit ? '✓' : '')); })),
-      e('label', { className: 'popp-rock' }, 'Next commitment', e('textarea', { disabled: !edit.editable, rows: 3, value: week.nextCommitment, placeholder: 'What will you commit to before next Friday?', onChange: function (event) { edit.change(function (next) { next.data.weeks[index].nextCommitment = event.target.value; }); } })),
+      e('section', { className: 'popp-card' }, e('section', { className: 'popp-score-banner', 'aria-label': 'Official execution score' },
+        e('div', { className: 'popp-score-banner-title' }, 'Official Execution Score'),
+        e('div', { className: 'popp-score-banner-grid' },
+          e('div', { className: 'popp-score-banner-item' }, e('strong', { className: 'popp-score-value popp-score-value--' + scoreTone(preview.score) }, preview.score + '%'), e('span', null, 'This week (live)')),
+          e('div', { className: 'popp-score-banner-item' }, e('strong', { className: 'popp-score-value' + (scoreToDate === null ? ' popp-score-value--empty' : ' popp-score-value--' + scoreTone(scoreToDate)) }, scoreToDate === null ? '—' : scoreToDate + '%'), e('span', null, 'Progress Tracker score to date (before this week)'))
+        )
+      ),
+      e('section', { className: 'popp-prior-commitment', 'aria-labelledby': 'popp-prior-commitment-title' },
+        e('h3', { id: 'popp-prior-commitment-title', className: 'popp-current-heading' }, 'Last week\'s commitment'),
+        e('p', { className: priorCommitment ? '' : 'popp-muted' }, priorCommitment || 'No previous commitment recorded.')
+      ),
+      e('fieldset', { className: 'popp-commitment-status' }, e('legend', null, 'Completed? (yes/no)'),
+        e('div', { className: 'popp-choice-grid' },
+          e('label', { className: 'popp-choice popp-choice--yes' }, e('input', { disabled: !edit.editable, type: 'radio', name: 'commitment', checked: week.commitmentCompleted === true, onChange: function () { edit.change(function (next) { next.data.weeks[index].commitmentCompleted = true; }); } }), e('span', null, 'Yes')),
+          e('label', { className: 'popp-choice popp-choice--no' }, e('input', { disabled: !edit.editable, type: 'radio', name: 'commitment', checked: week.commitmentCompleted === false, onChange: function () { edit.change(function (next) { next.data.weeks[index].commitmentCompleted = false; }); } }), e('span', null, 'No'))
+        )
+      ),
+      e('section', { className: 'popp-lead-activities', 'aria-labelledby': 'popp-lead-activities-title' },
+        e('h3', { id: 'popp-lead-activities-title', className: 'popp-current-heading' }, 'Lead activities — actual vs. minimum'),
+        e('p', null, 'All-or-nothing, same as the official score above: hitting 4 out of a minimum of 5 still counts as a miss. This table is just for entering the numbers — the badge in the last column is the only readout, on purpose.'),
+        e('div', { className: 'popp-results' }, data.activities.map(function (activity, activityIndex) { var actual = week.actuals[activityIndex]; var hasActual = hasNumber(actual); var hasGoal = activity.minimum !== ''; var hit = hasActual && hasGoal && Number(actual) >= Number(activity.minimum); var resultStatus = !hasActual || !hasGoal ? 'empty' : hit ? 'hit' : 'miss'; var resultLabel = resultStatus === 'hit' ? '✓ HIT' : resultStatus === 'miss' ? '✗ MISS' : '—'; return e('div', { className: 'popp-result-row', key: activityIndex }, e('span', { className: 'popp-result-name' }, activity.name || 'Activity ' + (activityIndex + 1)), e('span', { className: 'popp-result-minimum' }, 'Minimum: ' + (hasGoal ? activity.minimum : 'not set')), e('label', { className: 'popp-result-input' }, e('span', { className: 'screen-reader-text' }, 'Actual result for ' + (activity.name || 'Activity ' + (activityIndex + 1))), e('input', { disabled: !edit.editable, type: 'number', min: '0', step: 'any', value: actual === undefined ? '' : actual, placeholder: 'Actual', onChange: function (event) { edit.change(function (next) { next.data.weeks[index].actuals[activityIndex] = event.target.value; }); } })), e('span', { className: 'popp-result-status popp-result-status--' + resultStatus, 'aria-label': resultStatus === 'hit' ? 'Hit minimum' : resultStatus === 'miss' ? 'Missed minimum' : 'No result entered' }, resultLabel)); }))
+      ),
+      e('section', { className: 'popp-next-commitment', 'aria-labelledby': 'popp-next-commitment-title' },
+        e('h3', { id: 'popp-next-commitment-title', className: 'popp-current-heading' }, 'Commitment for next week'),
+        e('p', { id: 'popp-next-commitment-description' }, 'One sentence. Starts with a verb. Executed as written.'),
+        e('textarea', { disabled: !edit.editable, rows: 3, value: week.nextCommitment, placeholder: 'One sentence. Starts with a verb. Executed as written.', 'aria-labelledby': 'popp-next-commitment-title', 'aria-describedby': 'popp-next-commitment-description', onChange: function (event) { edit.change(function (next) { next.data.weeks[index].nextCommitment = event.target.value; }); } })
+      ),
       !plan.readOnly ? e('div', { className: 'popp-bottom-actions' }, e(Button, { variant: 'quiet', disabled: !edit.dirty || edit.saving || !edit.editable, onClick: function () { edit.save(false); } }, 'Save draft'), e(Button, { disabled: edit.saving || !edit.editable, onClick: function () { edit.save(true); } }, edit.saving ? 'Saving…' : 'Submit Week ' + (index + 1))) : null
       )
+    );
+  }
+
+  function ScoreTrend(props) {
+    var data = props.data, width = 720, height = 270, padding = { top: 26, right: 28, bottom: 42, left: 46 };
+    var plotWidth = width - padding.left - padding.right, plotHeight = height - padding.top - padding.bottom;
+    var points = data.weeks.map(function (week, index) {
+      return week.status === 'submitted' && hasNumber(week.score) ? { index: index, score: Number(week.score) } : null;
+    }).filter(Boolean);
+    var runningTotal = 0;
+    var currentScorePoints = points.map(function (point, pointIndex) {
+      runningTotal += point.score;
+      return { index: point.index, score: Math.ceil(runningTotal / (pointIndex + 1)) };
+    });
+    var x = function (index) { return padding.left + (data.weeks.length > 1 ? index / (data.weeks.length - 1) * plotWidth : plotWidth / 2); };
+    var y = function (score) { return padding.top + (100 - score) / 100 * plotHeight; };
+    var pointList = points.map(function (point) { return x(point.index).toFixed(1) + ',' + y(point.score).toFixed(1); }).join(' ');
+    var currentScorePointList = currentScorePoints.map(function (point) { return x(point.index).toFixed(1) + ',' + y(point.score).toFixed(1); }).join(' ');
+    var ticks = [100, 80, 60, 40, 20, 0];
+    var chartLabel = points.length ? 'Execution score trend. ' + points.map(function (point, pointIndex) { return 'Week ' + (point.index + 1) + ': weekly score ' + point.score + ' percent, current score ' + currentScorePoints[pointIndex].score + ' percent'; }).join('. ') + '.' : 'No submitted weekly scores yet.';
+    var bestScore = points.length ? Math.max.apply(null, points.map(function (point) { return point.score; })) : null;
+    return e('section', { className: 'popp-card popp-score-chart', 'aria-labelledby': 'popp-score-chart-title' },
+      e('div', { className: 'popp-score-chart-header' }, e('div', null, e('h3', { id: 'popp-score-chart-title' }, 'Execution score trend'), e('p', null, 'Track weekly execution and your current score against the 80% target.')), points.length ? e('div', { className: 'popp-score-chart-summary' }, e('span', null, 'Best week'), e('strong', { className: 'popp-score-value--' + scoreTone(bestScore) }, bestScore + '%')) : null),
+      points.length ? e('div', { className: 'popp-score-chart-canvas' }, e('svg', { viewBox: '0 0 ' + width + ' ' + height, role: 'img', 'aria-label': chartLabel },
+        e('g', { className: 'popp-score-chart-grid' }, ticks.map(function (tick) { return e('g', { key: tick }, e('line', { x1: padding.left, x2: width - padding.right, y1: y(tick), y2: y(tick) }), e('text', { x: padding.left - 10, y: y(tick) + 4, textAnchor: 'end' }, tick + '%')); })),
+        e('line', { className: 'popp-score-chart-target', x1: padding.left, x2: width - padding.right, y1: y(80), y2: y(80) }),
+        e('text', { className: 'popp-score-chart-target-label', x: width - padding.right, y: y(80) - 7, textAnchor: 'end' }, '80% target'),
+        e('polyline', { className: 'popp-score-chart-line', points: pointList }),
+        e('polyline', { className: 'popp-score-chart-current-line', points: currentScorePointList }),
+        points.map(function (point) { return e('g', { className: 'popp-score-chart-point popp-score-chart-point--' + scoreTone(point.score), key: point.index }, e('circle', { cx: x(point.index), cy: y(point.score), r: 6 }), e('title', null, 'Week ' + (point.index + 1) + ': ' + point.score + '%')); }),
+        currentScorePoints.map(function (point) { return e('g', { className: 'popp-score-chart-current-point', key: point.index }, e('circle', { cx: x(point.index), cy: y(point.score), r: 4 }), e('title', null, 'Current score after Week ' + (point.index + 1) + ': ' + point.score + '%')); }),
+        data.weeks.map(function (week, index) { return e('text', { className: 'popp-score-chart-x-label', key: index, x: x(index), y: height - 16, textAnchor: 'middle' }, 'W' + (index + 1)); })
+      ), e('div', { className: 'popp-score-chart-legend', 'aria-label': 'Graph legend' }, e('span', { className: 'popp-score-chart-legend-weekly' }, 'Weekly score'), e('span', { className: 'popp-score-chart-legend-current' }, 'Current score'))) : e('div', { className: 'popp-score-chart-empty' }, 'Submit your first week to see your execution score trend.')
     );
   }
 
@@ -234,9 +294,9 @@
     var plan = props.plan;
     var submitted = plan.data.weeks.filter(function (week) { return week.status === 'submitted'; });
     var scoreToDate = submitted.length ? Math.ceil(submitted.reduce(function (total, week) { return total + week.score; }, 0) / submitted.length) : 0;
-    return e('section', null, e(SectionHeader, { title: 'Score history', copy: 'Your submitted weekly execution scores.', aside: e('div', { className: 'popp-score-to-date' }, e('span', null, 'Score to date'), e('strong', null, scoreToDate + '%')) }), e('section', { className: 'popp-card popp-history' }, plan.data.weeks.map(function (week, index) { return e('div', { className: week.status === 'submitted' ? 'is-submitted' : '', key: index }, e('span', null, 'Week ' + (index + 1)), e('small', null, weekDate(plan.data.weekOneEnding, index)), e('strong', null, week.status === 'submitted' ? week.score + '%' : '—')); })));
+    return e('section', null, e(SectionHeader, { title: 'Score history', copy: 'Your submitted weekly execution scores.', aside: e('div', { className: 'popp-score-to-date' }, e('span', null, 'Score to date'), e('strong', null, scoreToDate + '%')) }), e('section', { className: 'popp-card popp-history' }, plan.data.weeks.map(function (week, index) { return e('div', { className: week.status === 'submitted' ? 'is-submitted' : '', key: index }, e('span', null, 'Week ' + (index + 1)), e('small', null, weekDate(plan.data.weekOneEnding, index)), e('strong', null, week.status === 'submitted' ? week.score + '%' : '—')); })), e(ScoreTrend, { data: plan.data }));
   }
-  function SectionHeader(props) { return e('header', { className: 'popp-section-header' }, e('div', null, e('span', null, '12-week execution system'), e('h2', null, props.title), e('p', null, props.copy)), props.aside || (props.edit && !props.edit.editable ? e('b', { className: 'popp-locked' }, 'Read only') : null)); }
+  function SectionHeader(props) { return e('header', { className: 'popp-section-header' }, e('div', null, e('span', null, '12-Week Execution Score'), e('h2', null, props.title), e('p', null, props.copy)), props.aside || (props.edit && !props.edit.editable ? e('b', { className: 'popp-locked' }, 'Read only') : null)); }
 
   function Instructions() {
     var cards = [['1', 'Set up once', 'Use Week 0 to define 3–5 lead activities, weekly minimums, three Rocks, and your first commitment.'], ['2', 'Do the work', 'Execute the recurring lead activities and the one-time commitment during the week.'], ['3', 'Score the week', 'Record actuals. Meeting the minimum is a Hit; anything below it is a Miss. Each activity and both commitment criteria carry equal weight.'], ['4', 'Commit again', 'Write one executable commitment for the following week. It becomes that week’s “last week’s commitment.”']];
