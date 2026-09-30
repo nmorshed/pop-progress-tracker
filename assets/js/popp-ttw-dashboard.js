@@ -9,6 +9,59 @@
   var useRef = wp.element.useRef;
   var useState = wp.element.useState;
   var config = window.POPP_TTW_DASHBOARD;
+  var printRoot = null;
+
+  // Print from a direct body child so host/theme wrappers cannot clip or hide the dashboard.
+  function clearPrintDashboard() {
+    if (printRoot) {
+      printRoot.remove();
+      printRoot = null;
+    }
+    document.body.classList.remove('popttw-printing');
+  }
+
+  function syncPrintControls(source, copy) {
+    var sourceControls = source.querySelectorAll('input, select, textarea');
+    var copyControls = copy.querySelectorAll('input, select, textarea');
+    sourceControls.forEach(function (control, index) {
+      var copiedControl = copyControls[index];
+      if (!copiedControl) return;
+      copiedControl.value = control.value;
+      if (control.type === 'checkbox' || control.type === 'radio') copiedControl.checked = control.checked;
+      if (control.tagName === 'SELECT') {
+        Array.prototype.forEach.call(copiedControl.options, function (option) { option.selected = option.value === control.value; });
+      }
+      if (control.tagName === 'TEXTAREA') copiedControl.textContent = control.value;
+    });
+  }
+
+  function preparePrintDashboard() {
+    clearPrintDashboard();
+    var source = root.querySelector('.popttw-view');
+    if (!source) return;
+    var copy = source.cloneNode(true);
+    syncPrintControls(source, copy);
+    copy.querySelectorAll('select.popttw-yes-no').forEach(function (control) {
+      var answer = document.createElement('span');
+      answer.className = 'popttw-print-answer';
+      answer.textContent = answerLabel(control.value) || '-';
+      control.replaceWith(answer);
+    });
+    printRoot = document.createElement('div');
+    printRoot.className = 'popp-ttw-dashboard popttw-print-root';
+    printRoot.setAttribute('aria-hidden', 'true');
+    printRoot.appendChild(copy);
+    document.body.appendChild(printRoot);
+    document.body.classList.add('popttw-printing');
+  }
+
+  function printDashboard() {
+    preparePrintDashboard();
+    window.requestAnimationFrame(function () { window.print(); });
+  }
+
+  window.addEventListener('beforeprint', preparePrintDashboard);
+  window.addEventListener('afterprint', clearPrintDashboard);
 
   function api(path, options) {
     options = options || {};
@@ -39,6 +92,8 @@
   function uid(prefix) { return prefix + '-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8); }
   function message(error) { return error && error.message ? error.message : 'Something went wrong. Please try again.'; }
   function present(value) { return value !== '' && value !== null && value !== undefined && !isNaN(parseFloat(value)); }
+  function answered(value) { return value === 'yes' || value === 'no'; }
+  function answerLabel(value) { return value === 'yes' ? 'Yes' : value === 'no' ? 'No' : ''; }
   function percent(value) { return value === null || value === '' || value === undefined ? '—' : Math.round(value) + '%'; }
   function tone(value, target) { return value === null || value === '' || value === undefined ? '' : Number(value) >= target ? ' is-good' : ' is-bad'; }
 
@@ -56,14 +111,14 @@
   }
 
   function repHasData(rep) {
-    return rep.tactics.some(present) || rep.kept !== '' || String(rep.newCommitment || '').trim() !== '';
+    return rep.tactics.some(answered) || answered(rep.kept) || answered(rep.newCommitmentMade);
   }
 
   function computeWeeklyScore(rep) {
     if (!repHasData(rep)) return null;
-    var points = rep.tactics.reduce(function (total, value) { return total + (present(value) && Number(value) >= 100 ? 1 : 0); }, 0);
+    var points = rep.tactics.reduce(function (total, value) { return total + (value === 'yes' ? 1 : 0); }, 0);
     if (rep.kept === 'yes') points++;
-    if (String(rep.newCommitment || '').trim() !== '') points++;
+    if (rep.newCommitmentMade === 'yes') points++;
     return Math.round((points / 5) * 100);
   }
 
@@ -79,14 +134,14 @@
   }
 
   function computeCommitments(data) {
-    var roster = data.reps.filter(function (rep) { return String(rep.name || '').trim() !== ''; });
-    if (!roster.length) return null;
-    return Math.round((roster.filter(function (rep) { return String(rep.newCommitment || '').trim() !== ''; }).length / roster.length) * 100);
+    var responses = data.reps.filter(function (rep) { return answered(rep.newCommitmentMade); });
+    if (!responses.length) return null;
+    return Math.round((responses.filter(function (rep) { return rep.newCommitmentMade === 'yes'; }).length / responses.length) * 100);
   }
 
-  function computeTacticAverage(data, index) {
-    var values = data.reps.map(function (rep) { return rep.tactics[index]; }).filter(present).map(Number);
-    return values.length ? Math.round(values.reduce(function (sum, value) { return sum + value; }, 0) / values.length) : null;
+  function computeTacticRate(data, index) {
+    var responses = data.reps.map(function (rep) { return rep.tactics[index]; }).filter(answered);
+    return responses.length ? Math.round((responses.filter(function (value) { return value === 'yes'; }).length / responses.length) * 100) : null;
   }
 
   function csvCell(value) {
@@ -278,7 +333,7 @@
         e(SaveStatus, { value: props.status }),
         e(Button, { variant: 'quiet', onClick: addWeek }, '+ Add Week'),
         e(Button, { variant: 'quiet', onClick: exportCsv }, 'Export CSV'),
-        e(Button, { onClick: function () { window.print(); } }, 'Print')
+        e(Button, { onClick: printDashboard }, 'Print')
       ),
       e('div', { className: 'popttw-table-wrap' }, e('table', { className: 'popttw-table popttw-table--ttw' },
         e('thead', null, e('tr', null,
@@ -313,17 +368,17 @@
     var teamScore = computeTeamScore(data);
     var kept = computeKept(data);
     var commitments = computeCommitments(data);
-    var averages = [0, 1, 2].map(function (index) { return computeTacticAverage(data, index); });
+    var averages = [0, 1, 2].map(function (index) { return computeTacticRate(data, index); });
     var reportedAverages = averages.filter(function (value) { return value !== null; });
     var tacticSummary = reportedAverages.length ? Math.round(reportedAverages.reduce(function (sum, value) { return sum + value; }, 0) / reportedAverages.length) : null;
 
     function update(mutator, immediate) { var next = clone(data); mutator(next); props.change(next, immediate); }
     function updateRep(index, field, value) { update(function (next) { next.reps[index][field] = value; }); }
-    function addRep() { update(function (next) { next.reps.push({ id: uid('rep'), name: '', tactics: ['', '', ''], kept: '', newCommitment: '', rock: '', notes: '' }); }, true); }
+    function addRep() { update(function (next) { next.reps.push({ id: uid('rep'), name: '', tactics: ['', '', ''], kept: '', newCommitmentMade: '', rock: '', notes: '' }); }, true); }
     function removeRep(index) { if (data.reps.length <= 1) return; update(function (next) { next.reps.splice(index, 1); }, true); }
     function exportCsv() {
-      var rows = [['Salesperson'].concat(data.tactics, ['Kept Last Commitment', 'New Commitment', 'Weekly Score (%)', 'Rock Update', 'Notes'])];
-      data.reps.forEach(function (rep) { var score = computeWeeklyScore(rep); rows.push([rep.name].concat(rep.tactics, [rep.kept, rep.newCommitment, score === null ? '' : score, rep.rock, rep.notes])); });
+      var rows = [['Salesperson'].concat(data.tactics, ['Kept Last Commitment', 'New Commitment Made', 'Weekly Score (%)', 'Rock Update', 'Notes'])];
+      data.reps.forEach(function (rep) { var score = computeWeeklyScore(rep); rows.push([rep.name].concat(rep.tactics.map(answerLabel), [answerLabel(rep.kept), answerLabel(rep.newCommitmentMade), score === null ? '' : score, rep.rock, rep.notes])); });
       rows.push(['Team Execution Score', '', '', '', '', '', teamScore === null ? '' : teamScore, '', '']);
       downloadCsv('team-execution-scorecard-' + fileDate() + '.csv', rows);
     }
@@ -337,19 +392,19 @@
         e('article', { className: 'popttw-snapshot-card' + tone(tacticSummary, 80) }, e('span', null, 'Recurring Tactics'), e('strong', null, averages.every(function (value) { return value === null; }) ? '—' : ''), e('p', null, data.tactics.map(function (label, index) { return e('span', { key: index }, label + ': ' + percent(averages[index])); })))
       ),
       e(Toolbar, { good: 'Meeting cadence (80%+)', bad: 'Below cadence goal' },
-        e(SaveStatus, { value: props.status }), e(Button, { variant: 'quiet', onClick: exportCsv }, 'Export CSV'), e(Button, { onClick: function () { window.print(); } }, 'Print')
+        e(SaveStatus, { value: props.status }), e(Button, { variant: 'quiet', onClick: exportCsv }, 'Export CSV'), e(Button, { onClick: printDashboard }, 'Print')
       ),
       e('div', { className: 'popttw-table-wrap' }, e('table', { className: 'popttw-table popttw-table--scorecard' },
         e('thead', null, e('tr', null,
           e('th', { scope: 'col' }, 'Salesperson'),
           data.tactics.map(function (tactic, index) { return e('th', { scope: 'col', key: index }, e('input', { value: tactic, maxLength: 100, 'aria-label': 'Tactic ' + (index + 1) + ' label', onChange: function (event) { var value = event.target.value; update(function (next) { next.tactics[index] = value; }); } })); }),
-          e('th', { scope: 'col' }, 'Kept Last Commitment'), e('th', { scope: 'col' }, 'New Commitment'), e('th', { scope: 'col' }, 'Weekly Score'), e('th', { scope: 'col' }, 'Rock Update'), e('th', { scope: 'col' }, 'Notes'), e('th', { scope: 'col', className: 'popttw-remove-cell', 'aria-label': 'Row actions' })
+          e('th', { scope: 'col' }, 'Kept Last Commitment'), e('th', { scope: 'col' }, 'New Commitment Made'), e('th', { scope: 'col' }, 'Weekly Score'), e('th', { scope: 'col' }, 'Rock Update'), e('th', { scope: 'col' }, 'Notes'), e('th', { scope: 'col', className: 'popttw-remove-cell', 'aria-label': 'Row actions' })
         )),
         e('tbody', null, data.reps.map(function (rep, repIndex) { var score = computeWeeklyScore(rep); return e('tr', { key: rep.id },
           e('td', null, e('input', { value: rep.name, maxLength: 100, placeholder: 'Full name', 'aria-label': 'Salesperson name', onChange: function (event) { updateRep(repIndex, 'name', event.target.value); } })),
-          rep.tactics.map(function (value, tacticIndex) { return e('td', { className: present(value) ? tone(Number(value), 100) : '', key: tacticIndex }, e('div', { className: 'popttw-percent-input' }, e('input', { type: 'number', min: '0', step: 'any', value: value, 'aria-label': (rep.name || 'Salesperson ' + (repIndex + 1)) + ', ' + data.tactics[tacticIndex], onChange: function (event) { var nextValue = event.target.value; update(function (next) { next.reps[repIndex].tactics[tacticIndex] = nextValue; }); } }), e('span', null, '%'))); }),
-          e('td', { className: rep.kept ? (rep.kept === 'yes' ? 'is-good' : 'is-bad') : '' }, e('select', { value: rep.kept, 'aria-label': (rep.name || 'Salesperson ' + (repIndex + 1)) + ' kept last commitment', onChange: function (event) { updateRep(repIndex, 'kept', event.target.value); } }, e('option', { value: '' }, '—'), e('option', { value: 'yes' }, 'Yes'), e('option', { value: 'no' }, 'No'))),
-          e('td', null, e('input', { value: rep.newCommitment, maxLength: 500, placeholder: "This week's commitment", 'aria-label': 'New commitment', onChange: function (event) { updateRep(repIndex, 'newCommitment', event.target.value); } })),
+          rep.tactics.map(function (value, tacticIndex) { return e('td', { className: answered(value) ? (value === 'yes' ? 'is-good' : 'is-bad') : '', key: tacticIndex }, e(YesNoSelect, { value: value, label: (rep.name || 'Salesperson ' + (repIndex + 1)) + ', ' + data.tactics[tacticIndex], onChange: function (nextValue) { update(function (next) { next.reps[repIndex].tactics[tacticIndex] = nextValue; }); } })); }),
+          e('td', { className: answered(rep.kept) ? (rep.kept === 'yes' ? 'is-good' : 'is-bad') : '' }, e(YesNoSelect, { value: rep.kept, label: (rep.name || 'Salesperson ' + (repIndex + 1)) + ' kept last commitment', onChange: function (value) { updateRep(repIndex, 'kept', value); } })),
+          e('td', { className: answered(rep.newCommitmentMade) ? (rep.newCommitmentMade === 'yes' ? 'is-good' : 'is-bad') : '' }, e(YesNoSelect, { value: rep.newCommitmentMade, label: (rep.name || 'Salesperson ' + (repIndex + 1)) + ' made a new commitment', onChange: function (value) { updateRep(repIndex, 'newCommitmentMade', value); } })),
           e('td', { className: 'popttw-computed' + tone(score, 80) }, percent(score)),
           e('td', null, e('input', { value: rep.rock, maxLength: 500, placeholder: 'Rock progress', 'aria-label': 'Rock update', onChange: function (event) { updateRep(repIndex, 'rock', event.target.value); } })),
           e('td', null, e('input', { value: rep.notes, maxLength: 1000, placeholder: 'Notes', 'aria-label': 'Notes', onChange: function (event) { updateRep(repIndex, 'notes', event.target.value); } })),
@@ -368,6 +423,10 @@
     return e('article', { className: 'popttw-snapshot-card' + tone(props.value, 80) }, e('span', null, props.label), e('strong', null, percent(props.value)));
   }
 
+  function YesNoSelect(props) {
+    return e('select', { className: 'popttw-yes-no', value: props.value, 'aria-label': props.label, onChange: function (event) { props.onChange(event.target.value); } }, e('option', { value: '' }, '—'), e('option', { value: 'yes' }, 'Yes'), e('option', { value: 'no' }, 'No'));
+  }
+
   function Instructions(props) {
     var ttw = [
       ['How to update', "Each Monday, enter this week's actual results in the current week's column. Add a week and the oldest week drops off automatically."],
@@ -378,9 +437,9 @@
     ];
     var scorecard = [
       ["How it's scored", "Each rep's Weekly Score is 5 items worth 20% each: the 3 recurring tactics, keeping last week's commitment, and making a new commitment this week."],
-      ['Recurring tactics', "Rename the 3 tactic columns for your team. Enter each rep's attainment as a percent of target — 100% or more earns the point and turns green."],
-      ['Kept last commitment', "Did this rep follow through on what they committed to in last week's huddle? Yes earns the point; No or blank does not."],
-      ['New commitment', 'Entering what the rep is committing to for the coming week earns the point. An empty field means no commitment was made.'],
+      ['Recurring tactics', "Rename the 3 tactic columns for your team, then choose Yes or No for each rep. Yes earns the full 20%; No earns 0%. There is no partial credit."],
+      ['Kept last commitment', "Did this rep follow through on what they committed to in last week's huddle? Yes earns the full 20%; No earns 0%."],
+      ['New commitment made', 'Choose Yes when the rep made a commitment for the coming week. Yes earns the full 20%; No earns 0%.'],
       ['Team Execution Score', "The bottom row averages every named rep's Weekly Score once they begin reporting. The target is 80% or better."],
       ['Independent from the TTW Dashboard', 'This tab is its own tool. Nothing entered here affects the Trailing Twelve Week Dashboard, and nothing there affects this.']
     ];

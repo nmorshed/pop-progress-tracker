@@ -11,7 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * lets the REST API reject writes originating from an older browser tab.
  */
 class POPP_Database {
-	public const VERSION = '4.0.0';
+	public const VERSION = '4.1.0';
 
 	public static function table(): string {
 		global $wpdb;

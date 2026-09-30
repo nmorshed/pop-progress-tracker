@@ -3,7 +3,7 @@ Contributors: pop
 Tags: goals, progress, action plan, accountability, shortcode
 Requires at least: 6.2
 Requires PHP: 7.4
-Stable tag: 4.0.0
+Stable tag: 4.1.0
 License: GPLv2 or later
 
 Private sales planning, playbook, and trailing twelve week dashboard tools for logged-in users.
@@ -20,7 +20,7 @@ To add the React Trailing Twelve Week Dashboard, place `[pop_ttw_dashboard]` on 
 
 == TTW dashboard access ==
 
-Administrators can always access the TTW dashboard. When the `popp_ttw_dashboard_allowed_user_ids` filter returns an empty array (the default), every logged-in user can access it. Return one or more user IDs from the filter to restrict access to those users.
+Administrators can always access the TTW dashboard. Other users can access it only when their user ID is returned by the `popp_ttw_dashboard_allowed_user_ids` filter. The default empty array keeps access admin-only until an allowlist is provided.
 
 Example:
 
@@ -41,7 +41,7 @@ Administrators can view every user’s active or completed action plan in read-o
 
 Every weekly activity plus commitment completion and the next commitment have equal weight. The final percentage is rounded up to the next integer and capped at 100.
 
-On the TTW dashboard, each week's Execution Score is the percentage of reported metrics that met or exceeded their goal. On the Team Execution Scorecard, the three tactics, kept commitment, and new commitment are worth 20% each; the team score averages named reps who have started reporting.
+On the TTW dashboard, each week's Execution Score is the percentage of reported metrics that met or exceeded their goal. On the Team Execution Scorecard, the three tactics, kept commitment, and new commitment made are Yes/No choices worth 20% each with no partial credit; the team score averages named reps who have started reporting.
 
 == Data removal ==
 

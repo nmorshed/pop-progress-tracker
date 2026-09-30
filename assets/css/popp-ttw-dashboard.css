@@ -65,7 +65,7 @@
 .popttw-table-wrap { background: #fff; border: 1px solid var(--popttw-line); border-radius: 12px; overflow: auto; }
 .popttw-table { border-collapse: separate; border-spacing: 0; font-size: 13px; margin: 0; width: 100%; }
 .popttw-table--ttw { min-width: 1680px; }
-.popttw-table--scorecard { min-width: 1380px; }
+.popttw-table--scorecard { min-width: 1240px; }
 .popttw-table th,
 .popttw-table td { border: 0; border-bottom: 1px solid var(--popttw-line); height: 46px; padding: 5px 8px; text-align: left; vertical-align: middle; }
 .popttw-table thead th { background: var(--popttw-navy); color: #fff; font-size: 13px; font-weight: 600; white-space: nowrap; }
@@ -94,11 +94,11 @@
 .popttw-table--scorecard th:nth-child(4),
 .popttw-table--scorecard td:nth-child(2),
 .popttw-table--scorecard td:nth-child(3),
-.popttw-table--scorecard td:nth-child(4) { min-width: 105px; }
+.popttw-table--scorecard td:nth-child(4) { min-width: 95px; }
 .popttw-table--scorecard th:nth-child(5),
-.popttw-table--scorecard td:nth-child(5) { min-width: 150px; }
+.popttw-table--scorecard td:nth-child(5),
 .popttw-table--scorecard th:nth-child(6),
-.popttw-table--scorecard td:nth-child(6),
+.popttw-table--scorecard td:nth-child(6) { min-width: 135px; }
 .popttw-table--scorecard th:nth-child(8),
 .popttw-table--scorecard td:nth-child(8),
 .popttw-table--scorecard th:nth-child(9),
@@ -108,9 +108,7 @@
 .popttw-table td.is-bad,
 .popttw-table .popttw-computed.is-bad { background: var(--popttw-bad); color: var(--popttw-bad-ink); }
 .popttw-table .popttw-computed { background: #f3f6f8; border-radius: 7px; font-weight: 600; text-align: center; }
-.popttw-percent-input { align-items: center; display: flex; }
-.popttw-percent-input span { color: var(--popttw-muted); margin-left: -22px; pointer-events: none; }
-.popttw-percent-input input { padding-right: 25px; }
+.popttw-table .popttw-yes-no { font-weight: 600; text-align: center; }
 .popttw-remove-cell { text-align: center !important; }
 .popttw-remove-cell button { background: transparent; border: 0; color: #a0abb3; cursor: pointer; font-size: 1.25rem; line-height: 1; padding: 6px; }
 .popttw-remove-cell button:hover:not(:disabled) { color: #a63c34; }
@@ -163,12 +161,18 @@
   .popttw-notice { align-items: stretch; flex-direction: column; }
 }
 
+.popttw-print-root { display: none; }
+
 @media print {
   @page { margin: 9mm; size: landscape; }
-  body * { visibility: hidden !important; }
-  .popp-ttw-dashboard,
-  .popp-ttw-dashboard * { visibility: visible !important; }
-  .popp-ttw-dashboard { inset: 0; margin: 0; max-width: none; position: absolute; width: 100%; }
+  html { height: auto !important; overflow: visible !important; }
+  body.popttw-printing { display: block !important; height: auto !important; margin: 0 !important; overflow: visible !important; padding: 0 !important; position: static !important; transform: none !important; }
+  body.popttw-printing > :not(.popttw-print-root) { display: none !important; }
+  body.popttw-printing::before,
+  body.popttw-printing::after { display: none !important; }
+  body.popttw-printing > .popttw-print-root { contain: none !important; display: block !important; float: none !important; height: auto !important; inset: auto !important; margin: 0 !important; max-height: none !important; max-width: none !important; overflow: visible !important; padding: 0 !important; position: static !important; transform: none !important; width: 100% !important; }
+  body.popttw-printing > .popttw-print-root,
+  body.popttw-printing > .popttw-print-root * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; visibility: visible !important; }
   .popttw-app { background: #fff; border: 0; box-shadow: none; padding: 0; }
   .popttw-tabs,
   .popttw-toolbar,
@@ -191,6 +195,7 @@
   .popttw-table td { height: 25px; padding: 2px 3px; }
   .popttw-table input,
   .popttw-table select { border: 0; font-size: inherit; min-height: 20px; padding: 1px; }
+  .popttw-print-root .popttw-print-answer { color: inherit; display: block; font-size: inherit; font-weight: 600; text-align: center; width: 100%; }
 }
 
 /* Approved POP brand treatment. */

@@ -78,7 +78,7 @@ class POPP_TTW_Dashboard_REST_Controller {
 		);
 
 		if ( empty( $allowed_ids ) ) {
-			return true;
+			return false;
 		}
 
 		return in_array( $user_id, $allowed_ids, true );
@@ -219,7 +219,7 @@ class POPP_TTW_Dashboard_REST_Controller {
 	private function default_scorecard(): array {
 		$reps = array();
 		for ( $i = 1; $i <= 8; $i++ ) {
-			$reps[] = array( 'id' => 'rep-' . $i, 'name' => '', 'tactics' => array( '', '', '' ), 'kept' => '', 'newCommitment' => '', 'rock' => '', 'notes' => '' );
+			$reps[] = array( 'id' => 'rep-' . $i, 'name' => '', 'tactics' => array( '', '', '' ), 'kept' => '', 'newCommitmentMade' => '', 'rock' => '', 'notes' => '' );
 		}
 		return array( 'tactics' => array( 'Tactic 1', 'Tactic 2', 'Tactic 3' ), 'reps' => $reps );
 	}
@@ -296,20 +296,26 @@ class POPP_TTW_Dashboard_REST_Controller {
 			$ids[ $id ] = true;
 			$values     = array();
 			foreach ( array_values( array_slice( (array) ( $rep['tactics'] ?? array() ), 0, 3 ) ) as $value ) {
-				$values[] = $this->number_or_blank( $value );
+				$values[] = $this->yes_no_or_blank( $value, true );
 			}
 			while ( count( $values ) < 3 ) {
 				$values[] = '';
 			}
-			$kept = sanitize_key( (string) ( $rep['kept'] ?? '' ) );
+			$kept = $this->yes_no_or_blank( $rep['kept'] ?? '' );
+			if ( array_key_exists( 'newCommitmentMade', $rep ) ) {
+				$new_commitment_made = $this->yes_no_or_blank( $rep['newCommitmentMade'] );
+			} else {
+				// Before 4.1 this field contained commitment text; any text meant the point was earned.
+				$new_commitment_made = '' !== trim( (string) ( $rep['newCommitment'] ?? '' ) ) ? 'yes' : '';
+			}
 			$reps[] = array(
-				'id'            => $id,
-				'name'          => substr( sanitize_text_field( (string) ( $rep['name'] ?? '' ) ), 0, 100 ),
-				'tactics'       => $values,
-				'kept'          => in_array( $kept, array( 'yes', 'no' ), true ) ? $kept : '',
-				'newCommitment' => substr( sanitize_textarea_field( (string) ( $rep['newCommitment'] ?? '' ) ), 0, 500 ),
-				'rock'          => substr( sanitize_textarea_field( (string) ( $rep['rock'] ?? '' ) ), 0, 500 ),
-				'notes'         => substr( sanitize_textarea_field( (string) ( $rep['notes'] ?? '' ) ), 0, 1000 ),
+				'id'                => $id,
+				'name'              => substr( sanitize_text_field( (string) ( $rep['name'] ?? '' ) ), 0, 100 ),
+				'tactics'           => $values,
+				'kept'              => $kept,
+				'newCommitmentMade' => $new_commitment_made,
+				'rock'              => substr( sanitize_textarea_field( (string) ( $rep['rock'] ?? '' ) ), 0, 500 ),
+				'notes'             => substr( sanitize_textarea_field( (string) ( $rep['notes'] ?? '' ) ), 0, 1000 ),
 			);
 		}
 		if ( empty( $reps ) ) {
@@ -325,5 +331,16 @@ class POPP_TTW_Dashboard_REST_Controller {
 		}
 		$number = (float) $value;
 		return max( 0, min( 999999999, $number ) );
+	}
+
+	private function yes_no_or_blank( $value, bool $migrate_percentage = false ): string {
+		$answer = sanitize_key( (string) $value );
+		if ( in_array( $answer, array( 'yes', 'no' ), true ) ) {
+			return $answer;
+		}
+		if ( $migrate_percentage && '' !== $value && null !== $value && is_numeric( $value ) ) {
+			return (float) $value >= 100 ? 'yes' : 'no';
+		}
+		return '';
 	}
 }

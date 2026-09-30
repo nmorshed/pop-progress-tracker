@@ -3,6 +3,25 @@
   var e=wp.element.createElement, Fragment=wp.element.Fragment, useEffect=wp.element.useEffect, useReducer=wp.element.useReducer, useState=wp.element.useState, useContext=wp.element.useContext;
   var SaveStatusContext=wp.element.createContext('All changes saved');
   var root=document.querySelector('[data-popp-playbook]'); if(!root||!window.POPP_PLAYBOOK)return;
+  // Print outside theme/page-builder wrappers that may be hidden or clipped on paper.
+  var printRoot=null;
+  function clearPrintDocument(){
+    if(printRoot){printRoot.remove();printRoot=null;}
+    document.body.classList.remove('popb-printing');
+  }
+  function preparePrintDocument(){
+    clearPrintDocument();
+    var source=root.querySelector('.popb-document');
+    if(!source)return;
+    printRoot=document.createElement('div');
+    printRoot.className='popp-playbook popb-print-root';
+    printRoot.setAttribute('aria-hidden','true');
+    printRoot.appendChild(source.cloneNode(true));
+    document.body.appendChild(printRoot);
+    document.body.classList.add('popb-printing');
+  }
+  window.addEventListener('beforeprint',preparePrintDocument);
+  window.addEventListener('afterprint',clearPrintDocument);
   var STEPS=['Written Growth Plan','Sales Action Plan','Ideal Customer Profile','Lead Generation','Capabilities Briefing','Discovery','Presentation','Bridges','Review & Print'];
   var GROWTH=[['retain_key_customers','Retain Key Customers'],['increase_share_of_wallet','Increase Share of Wallet'],['new_services','New Services to Existing Customers'],['known_targets','Targets I Already Know'],['generate_targets','Targets I Need to Generate'],['dormant_accounts','Dormant Accounts'],['retention_program','Customer Retention Program'],['price_upsell','Price Increases / Upsell / Larger Job Size / Change Orders']];
   var LEADS=[['resource_meeting','Resource Meeting / Project Review'],['strategic_introductions','Strategic Introductions'],['centers_of_influence','Centers of Influence'],['competitor_customers',"Competitors' Customers"],['existing_customers','Existing Customers'],['personal_network','Personal Network'],['associations','Associations'],['trade_shows','Trade Shows'],['conferences','Conferences'],['other','Other Tactics']];
