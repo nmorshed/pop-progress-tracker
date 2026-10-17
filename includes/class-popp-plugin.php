@@ -49,6 +49,21 @@ class POPP_Plugin {
 		);
 	}
 
+	/**
+	 * Versioned URLs of the plugin stylesheets a tool needs when printing. Printing happens
+	 * in an isolated frame that loads only these, so theme print resets and CSS optimizers
+	 * on the live host cannot strip the tool's colors.
+	 */
+	private function print_styles( array $files ): array {
+		return array_map(
+			static function ( $file ) {
+				$path = POPP_DIR . 'assets/css/' . $file;
+				return esc_url_raw( add_query_arg( 'ver', file_exists( $path ) ? (string) filemtime( $path ) : POPP_VERSION, POPP_URL . 'assets/css/' . $file ) );
+			},
+			$files
+		);
+	}
+
 	public function render_ttw_dashboard_shortcode(): string {
 		if ( ! is_user_logged_in() ) {
 			$redirect = get_permalink() ?: home_url( '/' );
@@ -75,7 +90,7 @@ class POPP_Plugin {
 		wp_enqueue_script( 'popp-ttw-dashboard', POPP_URL . 'assets/js/popp-ttw-dashboard.js', array( 'wp-element', 'popp-rest' ), $script_ver, true );
 		wp_add_inline_script(
 			'popp-ttw-dashboard',
-			'window.POPP_TTW_DASHBOARD = ' . wp_json_encode( $this->rest_config() ) . ';',
+			'window.POPP_TTW_DASHBOARD = ' . wp_json_encode( $this->rest_config() + array( 'printStyles' => $this->print_styles( array( 'popp-brand.css', 'popp-ttw-dashboard.css' ) ) ) ) . ';',
 			'before'
 		);
 
@@ -94,7 +109,7 @@ class POPP_Plugin {
 		wp_enqueue_style( 'popp-playbook', POPP_URL . 'assets/css/popp-playbook.css', array( 'popp-brand' ), file_exists( $style ) ? (string) filemtime( $style ) : POPP_VERSION );
 		$this->enqueue_rest_client();
 		wp_enqueue_script( 'popp-playbook', POPP_URL . 'assets/js/popp-playbook.js', array( 'wp-element', 'popp-rest' ), file_exists( $script ) ? (string) filemtime( $script ) : POPP_VERSION, true );
-		wp_add_inline_script( 'popp-playbook', 'window.POPP_PLAYBOOK=' . wp_json_encode( $this->rest_config() ) . ';', 'before' );
+		wp_add_inline_script( 'popp-playbook', 'window.POPP_PLAYBOOK=' . wp_json_encode( $this->rest_config() + array( 'printStyles' => $this->print_styles( array( 'popp-brand.css', 'popp-playbook.css' ) ) ) ) . ';', 'before' );
 		return '<div class="popp-playbook" data-popp-playbook aria-live="polite"><p>' . esc_html__( 'Loading your sales playbooks…', 'pop-progress-tracker' ) . '</p></div>';
 	}
 

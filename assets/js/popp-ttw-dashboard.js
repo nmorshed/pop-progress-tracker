@@ -26,19 +26,26 @@
     sourceControls.forEach(function (control, index) {
       var copiedControl = copyControls[index];
       if (!copiedControl) return;
+      // Mirror live values into attributes as well, so they survive serialization into the print frame.
       copiedControl.value = control.value;
-      if (control.type === 'checkbox' || control.type === 'radio') copiedControl.checked = control.checked;
+      if (control.tagName === 'INPUT') copiedControl.setAttribute('value', control.value);
+      if (control.type === 'checkbox' || control.type === 'radio') {
+        copiedControl.checked = control.checked;
+        if (control.checked) copiedControl.setAttribute('checked', ''); else copiedControl.removeAttribute('checked');
+      }
       if (control.tagName === 'SELECT') {
-        Array.prototype.forEach.call(copiedControl.options, function (option) { option.selected = option.value === control.value; });
+        Array.prototype.forEach.call(copiedControl.options, function (option) {
+          option.selected = option.value === control.value;
+          if (option.selected) option.setAttribute('selected', ''); else option.removeAttribute('selected');
+        });
       }
       if (control.tagName === 'TEXTAREA') copiedControl.textContent = control.value;
     });
   }
 
-  function preparePrintDashboard() {
-    clearPrintDashboard();
+  function buildPrintRoot() {
     var source = root.querySelector('.popttw-view');
-    if (!source) return;
+    if (!source) return null;
     var copy = source.cloneNode(true);
     syncPrintControls(source, copy);
     copy.querySelectorAll('select.popttw-yes-no').forEach(function (control) {
@@ -47,17 +54,61 @@
       answer.textContent = answerLabel(control.value) || '-';
       control.replaceWith(answer);
     });
-    printRoot = document.createElement('div');
-    printRoot.className = 'popp-ttw-dashboard popttw-print-root';
-    printRoot.setAttribute('aria-hidden', 'true');
-    printRoot.appendChild(copy);
+    var wrapper = document.createElement('div');
+    wrapper.className = 'popp-ttw-dashboard popttw-print-root';
+    wrapper.setAttribute('aria-hidden', 'true');
+    wrapper.appendChild(copy);
+    return wrapper;
+  }
+
+  // Ctrl+P fallback: print a direct body child so theme wrappers cannot clip or hide the dashboard.
+  function preparePrintDashboard() {
+    clearPrintDashboard();
+    printRoot = buildPrintRoot();
+    if (!printRoot) return;
     document.body.appendChild(printRoot);
     document.body.classList.add('popttw-printing');
   }
 
+  function escapeAttr(value) {
+    return String(value).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+  }
+
+  // The Print button renders the dashboard in a hidden frame that loads only the plugin's
+  // stylesheets. Theme print resets (e.g. "* { background: transparent !important }") and
+  // CSS optimizers on the live site then cannot remove the dashboard's colors.
   function printDashboard() {
-    preparePrintDashboard();
-    window.requestAnimationFrame(function () { window.print(); });
+    var copy = buildPrintRoot(), styles = config.printStyles || [];
+    if (!copy || !styles.length) {
+      preparePrintDashboard();
+      window.requestAnimationFrame(function () { window.print(); });
+      return;
+    }
+    var frame = document.createElement('iframe');
+    frame.setAttribute('aria-hidden', 'true');
+    frame.setAttribute('tabindex', '-1');
+    frame.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden;';
+    var started = false;
+    function cleanup() { if (frame.parentNode) frame.parentNode.removeChild(frame); }
+    frame.onload = function () {
+      if (started) return;
+      started = true;
+      var win = frame.contentWindow;
+      var ready = win.document.fonts && win.document.fonts.ready ? win.document.fonts.ready : Promise.resolve();
+      ready.then(function () {
+        win.addEventListener('afterprint', function () { window.setTimeout(cleanup, 0); });
+        win.focus();
+        win.print();
+        window.setTimeout(cleanup, 60000);
+      });
+    };
+    var heading = copy.querySelector('.popttw-hero h1');
+    var title = heading && heading.textContent.trim() ? heading.textContent.trim() : document.title;
+    frame.srcdoc = '<!doctype html><html lang="' + escapeAttr(document.documentElement.lang || 'en') + '"><head><meta charset="utf-8"><title>' + escapeAttr(title) + '</title>' +
+      styles.map(function (href) { return '<link rel="stylesheet" href="' + escapeAttr(href) + '">'; }).join('') +
+      '<style>html,body{margin:0;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact;}</style></head>' +
+      '<body class="popttw-printing">' + copy.outerHTML + '</body></html>';
+    document.body.appendChild(frame);
   }
 
   window.addEventListener('beforeprint', preparePrintDashboard);
