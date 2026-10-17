@@ -73,3 +73,40 @@
 @media (prefers-reduced-motion: reduce) {
   :is(.popp-action-plan, .popp-playbook, .popp-ttw-dashboard) * { transition: none !important; }
 }
+
+/* Shown by popp-rest.js when the login session can no longer be renewed. Lives on <body>, outside the tool roots. */
+.popp-session-banner {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  z-index: 100000;
+  transform: translateX(-50%);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  width: min(640px, calc(100% - 32px));
+  box-sizing: border-box;
+  padding: 14px 18px;
+  border: 1px solid #f0b9b3;
+  border-radius: 10px;
+  background: #fff1f0;
+  color: #8a231c;
+  font-family: 'POP Manrope', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+  box-shadow: 0 8px 24px rgba(13, 36, 64, 0.18);
+}
+.popp-session-banner span { flex: 1 1 260px; }
+.popp-session-banner a {
+  flex: 0 0 auto;
+  padding: 8px 14px;
+  border-radius: 6px;
+  background: #ff6e00;
+  color: #0d2440;
+  font-weight: 700;
+  text-decoration: none;
+}
+.popp-session-banner a:hover,
+.popp-session-banner a:focus-visible { background: #f47a20; }
+@media print { .popp-session-banner { display: none; } }

@@ -13,19 +13,7 @@
     ['rocks', '◆', 'Rocks'], ['history', '↗', 'Score history'], ['instructions', 'i', 'Instructions']
   ];
 
-  function api(path, options) {
-    options = options || {};
-    return fetch(config.root + path, {
-      method: options.method || 'GET', credentials: 'same-origin', cache: 'no-store',
-      headers: Object.assign({ 'Accept': 'application/json', 'Content-Type': 'application/json', 'Cache-Control': 'no-store', 'X-WP-Nonce': config.nonce }, options.headers || {}),
-      body: options.body ? JSON.stringify(options.body) : undefined
-    }).then(function (response) {
-      return response.json().catch(function () { return {}; }).then(function (json) {
-        if (!response.ok) { var error = new Error(json.message || 'Something went wrong. Please try again.'); error.status = response.status; throw error; }
-        return json;
-      });
-    });
-  }
+  function api(path, options) { return window.POPP_REST.request(config, path, options); }
 
   function clone(value) { return JSON.parse(JSON.stringify(value)); }
   function message(error) { return error && error.message ? error.message : 'Something went wrong. Please try again.'; }

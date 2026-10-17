@@ -64,28 +64,7 @@
   window.addEventListener('afterprint', clearPrintDashboard);
 
   function api(path, options) {
-    options = options || {};
-    return fetch(config.root + path, {
-      method: options.method || 'GET',
-      credentials: 'same-origin',
-      cache: 'no-store',
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-        'Cache-Control': 'no-store',
-        'X-WP-Nonce': config.nonce
-      },
-      body: options.body ? JSON.stringify(options.body) : undefined
-    }).then(function (response) {
-      return response.json().catch(function () { return {}; }).then(function (json) {
-        if (!response.ok) {
-          var error = new Error(json.message || 'Something went wrong. Please try again.');
-          error.status = response.status;
-          throw error;
-        }
-        return json;
-      });
-    });
+    return window.POPP_REST.request(config, path, options);
   }
 
   function clone(value) { return JSON.parse(JSON.stringify(value)); }
