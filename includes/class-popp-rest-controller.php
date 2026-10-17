@@ -140,7 +140,7 @@ class POPP_REST_Controller {
 	public function create( WP_REST_Request $request ) {
 		global $wpdb;
 		$params = (array) $request->get_json_params();
-		$title  = sanitize_text_field( $params['title'] ?? '' );
+		$title  = POPP_Text::line( $params['title'] ?? '', 190 );
 		if ( '' === $title ) {
 			return new WP_Error( 'popp_missing_title', __( 'Enter a name for the action plan.', 'pop-progress-tracker' ), array( 'status' => 400 ) );
 		}
@@ -188,7 +188,7 @@ class POPP_REST_Controller {
 			return new WP_Error( 'popp_write_conflict', __( 'This action plan changed in another tab. Reload it before saving again.', 'pop-progress-tracker' ), array( 'status' => 409, 'currentRevision' => (int) $row['revision'] ) );
 		}
 
-		$title = sanitize_text_field( $params['title'] ?? $row['title'] );
+		$title = POPP_Text::line( $params['title'] ?? $row['title'], 190 );
 		if ( '' === $title ) {
 			return new WP_Error( 'popp_missing_title', __( 'Enter a name for the action plan.', 'pop-progress-tracker' ), array( 'status' => 400 ) );
 		}
@@ -342,7 +342,7 @@ class POPP_REST_Controller {
 		$activities = array();
 		foreach ( array_slice( (array) ( $input['activities'] ?? $defaults['activities'] ), 0, 5 ) as $activity ) {
 			$activities[] = array(
-				'name'    => sanitize_text_field( is_array( $activity ) ? ( $activity['name'] ?? '' ) : '' ),
+				'name'    => POPP_Text::line( is_array( $activity ) ? ( $activity['name'] ?? '' ) : '', 190 ),
 				'minimum' => is_array( $activity ) && is_numeric( $activity['minimum'] ?? null ) ? max( 0, (float) $activity['minimum'] ) : '',
 			);
 		}
@@ -352,7 +352,7 @@ class POPP_REST_Controller {
 
 		$rocks = array();
 		foreach ( array_slice( (array) ( $input['rocks'] ?? $defaults['rocks'] ), 0, 3 ) as $rock ) {
-			$rocks[] = sanitize_textarea_field( (string) $rock );
+			$rocks[] = POPP_Text::block( $rock );
 		}
 		while ( count( $rocks ) < 3 ) {
 			$rocks[] = '';
@@ -370,7 +370,7 @@ class POPP_REST_Controller {
 				'status'              => 'submitted' === ( $week['status'] ?? '' ) ? 'submitted' : 'draft',
 				'commitmentCompleted' => is_bool( $week['commitmentCompleted'] ?? null ) ? $week['commitmentCompleted'] : null,
 				'actuals'             => $actuals,
-				'nextCommitment'      => sanitize_textarea_field( $week['nextCommitment'] ?? '' ),
+				'nextCommitment'      => POPP_Text::block( $week['nextCommitment'] ?? '' ),
 				'score'               => is_numeric( $week['score'] ?? null ) ? min( 100, max( 0, (int) $week['score'] ) ) : null,
 			);
 		}

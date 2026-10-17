@@ -2,7 +2,7 @@
 /**
  * Plugin Name: POP Sales Tools
  * Description: Private, cache-safe sales planning, playbook, and trailing twelve week dashboard tools for logged-in WordPress users.
- * Version: 4.1.0
+ * Version: 4.1.1
  * Requires at least: 6.2
  * Requires PHP: 7.4
  * Author: POP
@@ -13,11 +13,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'POPP_VERSION', '4.1.0' );
+define( 'POPP_VERSION', '4.1.1' );
 define( 'POPP_FILE', __FILE__ );
 define( 'POPP_DIR', plugin_dir_path( __FILE__ ) );
 define( 'POPP_URL', plugin_dir_url( __FILE__ ) );
 
+require_once POPP_DIR . 'includes/class-popp-text.php';
 require_once POPP_DIR . 'includes/class-popp-database.php';
 require_once POPP_DIR . 'includes/class-popp-rest-controller.php';
 require_once POPP_DIR . 'includes/class-popp-playbook-rest-controller.php';

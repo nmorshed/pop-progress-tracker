@@ -30,7 +30,7 @@ class POPP_Playbook_REST_Controller {
 	}
 
 	public function create( WP_REST_Request $request ) {
-		global $wpdb; $p = (array) $request->get_json_params(); $title = sanitize_text_field( $p['title'] ?? '' );
+		global $wpdb; $p = (array) $request->get_json_params(); $title = POPP_Text::line( $p['title'] ?? '', 190 );
 		if ( '' === $title ) return new WP_Error( 'popp_missing_title', __( 'Enter a name for the playbook.', 'pop-progress-tracker' ), array( 'status' => 400 ) );
 		$now = current_time( 'mysql', true );
 		$ok = $wpdb->insert( POPP_Database::playbook_table(), array( 'user_id'=>get_current_user_id(), 'title'=>$title, 'status'=>'draft', 'current_step'=>1, 'completion_percent'=>0, 'playbook_data'=>wp_json_encode( $this->defaults() ), 'revision'=>1, 'created_at'=>$now, 'updated_at'=>$now ) );
@@ -46,11 +46,11 @@ class POPP_Playbook_REST_Controller {
 		if ( ! isset( $p['revision'] ) || (int) $p['revision'] !== (int) $row['revision'] ) return new WP_Error( 'popp_write_conflict', __( 'This playbook changed in another tab. Reload it and try again.', 'pop-progress-tracker' ), array( 'status'=>409 ) );
 		$raw = is_array( $p['data'] ?? null ) ? $p['data'] : array();
 		if ( strlen( wp_json_encode( $raw ) ) > 500000 ) return new WP_Error( 'popp_too_large', __( 'This playbook contains too much data.', 'pop-progress-tracker' ), array( 'status'=>413 ) );
-		$data = $this->clean( $raw ); $title = sanitize_text_field( $p['title'] ?? $row['title'] );
+		$data = $this->clean( $raw ); $title = POPP_Text::line( $p['title'] ?? $row['title'], 190 );
 		$status = in_array( $p['status'] ?? '', array( 'draft','completed','archived' ), true ) ? $p['status'] : $row['status'];
 		$step = min( 9, max( 1, absint( $p['currentStep'] ?? $row['current_step'] ) ) ); $completion = $this->completion( $data );
 		$updated = $wpdb->update( POPP_Database::playbook_table(), array(
-			'title'=>$title ?: $row['title'], 'segment_name'=>sanitize_text_field( $data['identity']['segment'] ?? '' ), 'company_name'=>sanitize_text_field( $data['identity']['company'] ?? '' ),
+			'title'=>$title ?: $row['title'], 'segment_name'=>POPP_Text::line( $data['identity']['segment'] ?? '', 190 ), 'company_name'=>POPP_Text::line( $data['identity']['company'] ?? '', 190 ),
 			'status'=>$status, 'current_step'=>$step, 'completion_percent'=>$completion, 'playbook_data'=>wp_json_encode( $data ), 'revision'=>(int)$row['revision']+1,
 			'updated_at'=>current_time('mysql',true), 'completed_at'=>'completed'===$status ? current_time('mysql',true) : null,
 		), array( 'id'=>$id, 'user_id'=>get_current_user_id(), 'revision'=>(int)$row['revision'] ) );
@@ -69,7 +69,7 @@ class POPP_Playbook_REST_Controller {
 	private function find( int $id ): ?array { global $wpdb; $row=$wpdb->get_row($wpdb->prepare('SELECT * FROM '.POPP_Database::playbook_table().' WHERE id=%d AND user_id=%d',$id,get_current_user_id()),ARRAY_A); return $row ?: null; }
 	private function show_by_id( int $id ) { $row=$this->find($id); return $row ? rest_ensure_response($this->hydrate($row)) : new WP_Error('popp_missing_playbook',__('Playbook not found.','pop-progress-tracker'),array('status'=>404)); }
 	private function hydrate( array $r ): array { return array('id'=>(int)$r['id'],'title'=>$r['title'],'segmentName'=>$r['segment_name'],'companyName'=>$r['company_name'],'status'=>$r['status'],'currentStep'=>(int)$r['current_step'],'completionPercent'=>(int)$r['completion_percent'],'revision'=>(int)$r['revision'],'data'=>json_decode($r['playbook_data'],true) ?: $this->defaults(),'createdAt'=>$r['created_at'],'updatedAt'=>$r['updated_at']); }
-	private function clean( array $input ): array { $out=array(); foreach(array_slice($input,0,100,true) as $k=>$v){$k=is_int($k)?$k:substr(sanitize_key((string)$k),0,80); if(is_array($v))$out[$k]=$this->clean($v); elseif(is_bool($v))$out[$k]=$v; else $out[$k]=sanitize_textarea_field((string)$v);} return $out; }
+	private function clean( array $input ): array { $out=array(); foreach(array_slice($input,0,100,true) as $k=>$v){$k=is_int($k)?$k:substr(sanitize_key((string)$k),0,80); if(is_array($v))$out[$k]=$this->clean($v); elseif(is_bool($v))$out[$k]=$v; else $out[$k]=POPP_Text::block($v);} return $out; }
 	private function completion( array $d ): int { $checks=array(!empty($d['identity']['name']),!empty($d['growth']['goal']),!empty($d['growth']['selected']),!empty($d['action']['activities'][0]['name']),!empty($d['action']['rocks'][0]['text']),!empty($d['identity']['segment']),!empty($d['icp']['address']),!empty($d['icp']['problems'][0]['text']),!empty($d['lead']['selected']),!empty($d['capabilities']['when']),!empty($d['discovery']['circumstantial'][0]),!empty($d['presentation']['opening']),!empty($d['bridges']['assessment_name'])); return (int)round(count(array_filter($checks))/count($checks)*100); }
 	private function defaults(): array { return array(
 		'identity'=>array('name'=>'','company'=>'','segment'=>''),

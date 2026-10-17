@@ -229,7 +229,7 @@ class POPP_TTW_Dashboard_REST_Controller {
 		$defaults = $this->default_ttw();
 		$weeks   = array();
 		foreach ( array_values( array_slice( (array) ( $input['weeks'] ?? array() ), 0, 12 ) ) as $index => $week ) {
-			$label   = substr( sanitize_text_field( (string) $week ), 0, 40 );
+			$label   = POPP_Text::line( $week, 40 );
 			$weeks[] = '' !== $label ? $label : $defaults['weeks'][ $index ];
 		}
 		while ( count( $weeks ) < 12 ) {
@@ -256,8 +256,8 @@ class POPP_TTW_Dashboard_REST_Controller {
 			}
 			$metrics[] = array(
 				'id'     => $id,
-				'who'    => substr( sanitize_text_field( (string) ( $metric['who'] ?? '' ) ), 0, 100 ),
-				'name'   => substr( sanitize_text_field( (string) ( $metric['name'] ?? '' ) ), 0, 190 ),
+				'who'    => POPP_Text::line( $metric['who'] ?? '', 100 ),
+				'name'   => POPP_Text::line( $metric['name'] ?? '', 190 ),
 				'goal'   => $this->number_or_blank( $metric['goal'] ?? '' ),
 				'values' => $values,
 			);
@@ -269,7 +269,7 @@ class POPP_TTW_Dashboard_REST_Controller {
 		return array(
 			'weeks'        => $weeks,
 			'metrics'      => $metrics,
-			'executionWho' => substr( sanitize_text_field( (string) ( $input['executionWho'] ?? '' ) ), 0, 100 ),
+			'executionWho' => POPP_Text::line( $input['executionWho'] ?? '', 100 ),
 		);
 	}
 
@@ -277,7 +277,7 @@ class POPP_TTW_Dashboard_REST_Controller {
 		$defaults = $this->default_scorecard();
 		$tactics  = array();
 		foreach ( array_values( array_slice( (array) ( $input['tactics'] ?? array() ), 0, 3 ) ) as $index => $tactic ) {
-			$label     = substr( sanitize_text_field( (string) $tactic ), 0, 100 );
+			$label     = POPP_Text::line( $tactic, 100 );
 			$tactics[] = '' !== $label ? $label : $defaults['tactics'][ $index ];
 		}
 		while ( count( $tactics ) < 3 ) {
@@ -311,12 +311,12 @@ class POPP_TTW_Dashboard_REST_Controller {
 			}
 			$reps[] = array(
 				'id'                => $id,
-				'name'              => substr( sanitize_text_field( (string) ( $rep['name'] ?? '' ) ), 0, 100 ),
+				'name'              => POPP_Text::line( $rep['name'] ?? '', 100 ),
 				'tactics'           => $values,
 				'kept'              => $kept,
 				'newCommitmentMade' => $new_commitment_made,
-				'rock'              => substr( sanitize_textarea_field( (string) ( $rep['rock'] ?? '' ) ), 0, 500 ),
-				'notes'             => substr( sanitize_textarea_field( (string) ( $rep['notes'] ?? '' ) ), 0, 1000 ),
+				'rock'              => POPP_Text::block( $rep['rock'] ?? '', 500 ),
+				'notes'             => POPP_Text::block( $rep['notes'] ?? '', 1000 ),
 			);
 		}
 		if ( empty( $reps ) ) {

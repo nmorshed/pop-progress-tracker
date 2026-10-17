@@ -52,11 +52,7 @@
       var timer = window.setTimeout(function () { setNotice(''); }, 3000);
       return function () { window.clearTimeout(timer); };
     }, [notice]);
-    useEffect(function () {
-      if (!error) return undefined;
-      var timer = window.setTimeout(function () { setError(''); }, 3000);
-      return function () { window.clearTimeout(timer); };
-    }, [error]);
+    // Errors stay visible until the user's next action clears them; only success notices fade.
 
     function openPlan(id) {
       setLoading(true); setError('');
@@ -93,7 +89,7 @@
 
     if (loading) return e('div', { className: 'popp-loading', role: 'status' }, 'Loading your sales action plan…');
     return e('div', { className: 'popp-shell' },
-      e(Sidebar, { plans: plans, plan: plan, view: view, setView: function (next) { setView(next); setMenuOpen(false); }, openPlan: openPlan, openTeam: openTeam, startNewPlan: startNewPlan, menuOpen: menuOpen, setMenuOpen: setMenuOpen }),
+      e(Sidebar, { plans: plans, plan: plan, view: view, setView: function (next) { setView(next); setMenuOpen(false); setError(''); }, openPlan: openPlan, openTeam: openTeam, startNewPlan: startNewPlan, menuOpen: menuOpen, setMenuOpen: setMenuOpen }),
       e('main', { className: 'popp-main' },
         e(Notice, { kind: 'success' }, notice), e(Notice, { kind: 'error' }, error),
         view === 'archive-confirm' ? e(ArchiveConfirm, { plan: pendingArchive, cancel: function () { setPendingArchive(null); setView('overview'); }, confirm: function () { archivePlan(pendingArchive.id).then(function () { setPendingArchive(null); }).catch(function (err) { setError(message(err)); setView('overview'); }); } }) : view === 'team' ? e(Team, { team: team, openPlan: openPlan, loadTeam: loadTeam }) : e(Workspace, { plan: plan, plans: plans, view: view, setView: setView, createPlan: createPlan, updatePlan: updatePlan, archivePlan: archivePlan, setError: setError, setNotice: setNotice })

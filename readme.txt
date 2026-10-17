@@ -3,7 +3,7 @@ Contributors: pop
 Tags: goals, progress, action plan, accountability, shortcode
 Requires at least: 6.2
 Requires PHP: 7.4
-Stable tag: 4.1.0
+Stable tag: 4.1.1
 License: GPLv2 or later
 
 Private sales planning, playbook, and trailing twelve week dashboard tools for logged-in users.

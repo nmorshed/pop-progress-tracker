@@ -11,7 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * lets the REST API reject writes originating from an older browser tab.
  */
 class POPP_Database {
-	public const VERSION = '4.1.0';
+	public const VERSION = '4.1.1';
 
 	public static function table(): string {
 		global $wpdb;
@@ -85,8 +85,51 @@ class POPP_Database {
 	}
 
 	public static function maybe_upgrade(): void {
-		if ( self::VERSION !== get_option( 'popp_db_version' ) ) {
+		$installed = get_option( 'popp_db_version' );
+		if ( self::VERSION !== $installed ) {
 			self::activate();
+			if ( $installed && version_compare( $installed, '4.1.1', '<' ) ) {
+				self::decode_legacy_text();
+			}
+		}
+	}
+
+	/**
+	 * Before 4.1.1 text was saved through sanitize_text_field(), which stored "<"
+	 * as "&lt;" and "&" as "&amp;". Decode those rows once so users see what they typed.
+	 */
+	private static function decode_legacy_text(): void {
+		global $wpdb;
+		$tables = array(
+			self::table()               => array( 'title', 'plan_data' ),
+			self::playbook_table()      => array( 'title', 'segment_name', 'company_name', 'playbook_data' ),
+			self::ttw_dashboard_table() => array( 'ttw_data', 'scorecard_data' ),
+		);
+		foreach ( $tables as $table => $columns ) {
+			$where = implode( ' OR ', array_map( static function ( $column ) { return "`{$column}` LIKE '%&%'"; }, $columns ) );
+			$ids   = $wpdb->get_col( "SELECT id FROM {$table} WHERE {$where}" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			foreach ( $ids as $id ) {
+				$row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$table} WHERE id = %d", $id ), ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				if ( ! $row ) {
+					continue;
+				}
+				$changes = array();
+				foreach ( $columns as $column ) {
+					$value = (string) $row[ $column ];
+					if ( '_data' === substr( $column, -5 ) ) {
+						$decoded = json_decode( $value, true );
+						$fixed   = is_array( $decoded ) ? wp_json_encode( POPP_Text::decode_legacy( $decoded ) ) : $value;
+					} else {
+						$fixed = POPP_Text::decode_legacy( $value );
+					}
+					if ( $fixed !== $value ) {
+						$changes[ $column ] = $fixed;
+					}
+				}
+				if ( $changes ) {
+					$wpdb->update( $table, $changes, array( 'id' => (int) $id ) );
+				}
+			}
 		}
 	}
 }
