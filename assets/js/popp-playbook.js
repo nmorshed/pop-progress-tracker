@@ -22,6 +22,32 @@
   }
   window.addEventListener('beforeprint',preparePrintDocument);
   window.addEventListener('afterprint',clearPrintDocument);
+  // The Print button renders the document in a hidden frame that loads only the plugin's
+  // stylesheets. Theme print resets (e.g. "* { background: transparent !important }") and
+  // CSS optimizers on the live site then cannot remove the playbook's colors.
+  function attr(v){return String(v).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');}
+  function printDocument(title){
+    var source=root.querySelector('.popb-document'), styles=POPP_PLAYBOOK.printStyles||[];
+    if(!source||!styles.length){window.print();return;}
+    var frame=document.createElement('iframe');
+    frame.setAttribute('aria-hidden','true');frame.setAttribute('tabindex','-1');
+    frame.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden;';
+    var done=false;
+    function cleanup(){if(frame.parentNode)frame.parentNode.removeChild(frame);}
+    frame.onload=function(){
+      if(done)return;done=true;
+      var win=frame.contentWindow,ready=win.document.fonts&&win.document.fonts.ready?win.document.fonts.ready:Promise.resolve();
+      ready.then(function(){
+        win.addEventListener('afterprint',function(){setTimeout(cleanup,0);});
+        win.focus();win.print();
+        setTimeout(cleanup,60000);
+      });
+    };
+    frame.srcdoc='<!doctype html><html lang="'+attr(document.documentElement.lang||'en')+'"><head><meta charset="utf-8"><title>'+attr(title||document.title)+'</title>'+
+      styles.map(function(href){return '<link rel="stylesheet" href="'+attr(href)+'">';}).join('')+
+      '<style>html,body{margin:0;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact;}</style></head><body><div class="popp-playbook">'+source.outerHTML+'</div></body></html>';
+    document.body.appendChild(frame);
+  }
   var STEPS=['Written Growth Plan','Sales Action Plan','Ideal Customer Profile','Lead Generation','Capabilities Briefing','Discovery','Presentation','Bridges','Review & Print'];
   var GROWTH=[['retain_key_customers','Retain Key Customers'],['increase_share_of_wallet','Increase Share of Wallet'],['new_services','New Services to Existing Customers'],['known_targets','Targets I Already Know'],['generate_targets','Targets I Need to Generate'],['dormant_accounts','Dormant Accounts'],['retention_program','Customer Retention Program'],['price_upsell','Price Increases / Upsell / Larger Job Size / Change Orders']];
   var LEADS=[['resource_meeting','Resource Meeting / Project Review'],['strategic_introductions','Strategic Introductions'],['centers_of_influence','Centers of Influence'],['competitor_customers',"Competitors' Customers"],['existing_customers','Existing Customers'],['personal_network','Personal Network'],['associations','Associations'],['trade_shows','Trade Shows'],['conferences','Conferences'],['other','Other Tactics']];
@@ -174,7 +200,7 @@
     var presentationStart=[['Opening Gambit','opening'],['Unique Value Proposition','value_proposition'],['Proof of Concept','proof'],["What's In It For You (WIIFY)",'wiify'],['Point B','point_b'],['Outline and Running Time','outline']];
     var presentationSteps=[['Step Two — State Their Objections','objections'],['Step Three — Measures of Success','success'],['Step Four — Value to the Customer','customer_value'],['Step Five — How You Do What You Do','process'],['Step Six — The Ask','ask'],['Step Seven — The Close / Sealing Questions','close'],['Step Eight — Anchor It','anchor']];
     var assessmentQuestions=[["What are you looking at?",'looking_at'],["What can you see that they can't?",'expert_view'],["How do you score what's wrong?",'scoring'],['Is there a compliance/safety angle?','compliance'],['What would only an insider know to ask?','insider'],["What's the bottom line?",'bottom_line']];
-    function print(){p.save(null,'completed').then(function(ok){if(ok)window.print();});}
+    function print(){p.save(null,'completed').then(function(ok){if(ok)printDocument(p.plan&&p.plan.title);});}
     return e(Fragment,null,
       e('div',{className:'popb-review-head'},e(Header,{n:9,title:'Review & Print',copy:'Review all eight sections, then print the playbook or save it as a PDF.'}),e(Button,{onClick:print},'Print / Save as PDF')),
       e('article',{className:'popb-document'},

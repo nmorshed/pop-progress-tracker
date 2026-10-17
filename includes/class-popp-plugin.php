@@ -94,7 +94,14 @@ class POPP_Plugin {
 		wp_enqueue_style( 'popp-playbook', POPP_URL . 'assets/css/popp-playbook.css', array( 'popp-brand' ), file_exists( $style ) ? (string) filemtime( $style ) : POPP_VERSION );
 		$this->enqueue_rest_client();
 		wp_enqueue_script( 'popp-playbook', POPP_URL . 'assets/js/popp-playbook.js', array( 'wp-element', 'popp-rest' ), file_exists( $script ) ? (string) filemtime( $script ) : POPP_VERSION, true );
-		wp_add_inline_script( 'popp-playbook', 'window.POPP_PLAYBOOK=' . wp_json_encode( $this->rest_config() ) . ';', 'before' );
+		// Printing happens in an isolated frame with only these stylesheets, so theme print
+		// resets and CSS optimizers on the live host cannot strip the playbook's colors.
+		$brand        = POPP_DIR . 'assets/css/popp-brand.css';
+		$print_styles = array(
+			add_query_arg( 'ver', file_exists( $brand ) ? (string) filemtime( $brand ) : POPP_VERSION, POPP_URL . 'assets/css/popp-brand.css' ),
+			add_query_arg( 'ver', file_exists( $style ) ? (string) filemtime( $style ) : POPP_VERSION, POPP_URL . 'assets/css/popp-playbook.css' ),
+		);
+		wp_add_inline_script( 'popp-playbook', 'window.POPP_PLAYBOOK=' . wp_json_encode( $this->rest_config() + array( 'printStyles' => array_map( 'esc_url_raw', $print_styles ) ) ) . ';', 'before' );
 		return '<div class="popp-playbook" data-popp-playbook aria-live="polite"><p>' . esc_html__( 'Loading your sales playbooks…', 'pop-progress-tracker' ) . '</p></div>';
 	}
 
